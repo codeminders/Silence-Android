@@ -18,8 +18,8 @@ package org.smssecure.smssecure.database.model;
 
 import android.content.Context;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextUtils;
@@ -28,9 +28,7 @@ import android.text.style.StyleSpan;
 import org.smssecure.smssecure.R;
 import org.smssecure.smssecure.database.MmsSmsColumns;
 import org.smssecure.smssecure.database.SmsDatabase;
-import org.smssecure.smssecure.database.ThreadDatabase;
 import org.smssecure.smssecure.recipients.Recipients;
-import org.smssecure.smssecure.util.SilencePreferences;
 
 /**
  * The message record model which represents thread heading messages.

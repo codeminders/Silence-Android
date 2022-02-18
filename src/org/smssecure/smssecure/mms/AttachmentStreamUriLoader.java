@@ -2,7 +2,7 @@ package org.smssecure.smssecure.mms;
 
 import android.content.Context;
 import android.net.Uri;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.bumptech.glide.load.data.DataFetcher;
 import com.bumptech.glide.load.model.GenericLoaderFactory;
@@ -10,10 +10,7 @@ import com.bumptech.glide.load.model.ModelLoader;
 import com.bumptech.glide.load.model.ModelLoaderFactory;
 import com.bumptech.glide.load.model.stream.StreamModelLoader;
 
-import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.mms.AttachmentStreamUriLoader.AttachmentModel;
-import org.smssecure.smssecure.mms.DecryptableStreamUriLoader.DecryptableUri;
-import org.smssecure.smssecure.util.SaveAttachmentTask.Attachment;
 
 import java.io.File;
 import java.io.InputStream;

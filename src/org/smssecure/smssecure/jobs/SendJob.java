@@ -1,7 +1,7 @@
 package org.smssecure.smssecure.jobs;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import org.smssecure.smssecure.BuildConfig;
 import org.smssecure.smssecure.attachments.Attachment;
@@ -12,7 +12,6 @@ import org.smssecure.smssecure.mms.MediaConstraints;
 import org.smssecure.smssecure.mms.MediaStream;
 import org.smssecure.smssecure.mms.MmsException;
 import org.smssecure.smssecure.transport.UndeliverableMessageException;
-import org.smssecure.smssecure.util.Util;
 import org.whispersystems.jobqueue.JobParameters;
 
 import java.io.IOException;

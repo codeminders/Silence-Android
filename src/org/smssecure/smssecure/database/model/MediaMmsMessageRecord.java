@@ -17,7 +17,7 @@
 package org.smssecure.smssecure.database.model;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.SpannableString;
 
 import org.smssecure.smssecure.R;
@@ -29,7 +29,6 @@ import org.smssecure.smssecure.mms.Slide;
 import org.smssecure.smssecure.mms.SlideDeck;
 import org.smssecure.smssecure.recipients.Recipient;
 import org.smssecure.smssecure.recipients.Recipients;
-import org.smssecure.smssecure.util.SilencePreferences;
 
 import java.util.List;
 

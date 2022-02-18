@@ -3,16 +3,13 @@ package org.smssecure.smssecure.preferences.widgets;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
-import android.support.v7.preference.ListPreference;
-import android.support.v7.preference.PreferenceViewHolder;
+import androidx.annotation.RequiresApi;
+import androidx.preference.ListPreference;
+import androidx.preference.PreferenceViewHolder;
 import android.util.AttributeSet;
-import android.util.TypedValue;
-import android.view.View;
 import android.widget.TextView;
 
 import org.smssecure.smssecure.R;
-import org.smssecure.smssecure.util.ViewUtil;
 
 public class SilenceListPreference extends ListPreference {
 

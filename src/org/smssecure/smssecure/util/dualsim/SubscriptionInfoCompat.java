@@ -1,9 +1,9 @@
 package org.smssecure.smssecure.util.dualsim;
 
 import android.content.Context;
-import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.smssecure.smssecure.R;
 import org.smssecure.smssecure.util.SilencePreferences;

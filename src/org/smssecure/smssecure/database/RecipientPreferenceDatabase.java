@@ -6,12 +6,11 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import org.smssecure.smssecure.color.MaterialColor;
-import org.smssecure.smssecure.database.DatabaseContentProviders;
 import org.smssecure.smssecure.recipients.Recipients;
 import org.smssecure.smssecure.util.Util;
 import org.whispersystems.libsignal.util.guava.Optional;

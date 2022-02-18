@@ -4,8 +4,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.UriMatcher;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.util.Log;
+import androidx.annotation.NonNull;
 
 import org.smssecure.smssecure.attachments.AttachmentId;
 import org.smssecure.smssecure.crypto.MasterSecret;

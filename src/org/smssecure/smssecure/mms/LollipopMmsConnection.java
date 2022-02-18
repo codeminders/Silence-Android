@@ -77,7 +77,7 @@ public abstract class LollipopMmsConnection extends BroadcastReceiver {
   }
 
   protected PendingIntent getPendingIntent() {
-    return PendingIntent.getBroadcast(getContext(), 1, new Intent(action), PendingIntent.FLAG_ONE_SHOT);
+    return PendingIntent.getBroadcast(getContext(), 1, new Intent(action), PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
   }
 
   protected Context getContext() {

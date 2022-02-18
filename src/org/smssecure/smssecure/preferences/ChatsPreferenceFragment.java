@@ -3,22 +3,18 @@ package org.smssecure.smssecure.preferences;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.preference.EditTextPreference;
-import android.support.v7.preference.ListPreference;
-import android.support.v7.preference.Preference;
-import android.text.TextUtils;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.preference.EditTextPreference;
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+
 import android.util.Log;
 
 import org.smssecure.smssecure.ApplicationPreferencesActivity;
 import org.smssecure.smssecure.R;
 import org.smssecure.smssecure.util.SilencePreferences;
 import org.smssecure.smssecure.util.Trimmer;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 public class ChatsPreferenceFragment extends CorrectedPreferenceFragment {
   private static final String TAG = ChatsPreferenceFragment.class.getSimpleName();

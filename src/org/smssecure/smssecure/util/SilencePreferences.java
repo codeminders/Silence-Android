@@ -1,22 +1,16 @@
 package org.smssecure.smssecure.util;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.annotation.ArrayRes;
-import android.support.annotation.NonNull;
+import androidx.annotation.ArrayRes;
+import androidx.annotation.NonNull;
 import android.util.Log;
 
-import org.smssecure.smssecure.R;
 import org.smssecure.smssecure.preferences.widgets.NotificationPrivacyPreference;
 import org.smssecure.smssecure.util.dualsim.SubscriptionManagerCompat;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 public class SilencePreferences {
 

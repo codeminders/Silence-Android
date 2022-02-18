@@ -2,12 +2,11 @@ package org.smssecure.smssecure.contacts.avatars;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
-import android.support.annotation.DrawableRes;
-import android.support.v4.graphics.ColorUtils;
+import androidx.annotation.DrawableRes;
+import androidx.core.graphics.ColorUtils;
 import android.widget.ImageView;
 
 import com.amulyakhare.textdrawable.TextDrawable;

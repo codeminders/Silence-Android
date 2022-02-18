@@ -3,9 +3,8 @@ package org.smssecure.smssecure;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.AsyncTask;
-import android.support.v7.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
@@ -18,22 +17,14 @@ import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.crypto.storage.SilenceSessionStore;
 import org.smssecure.smssecure.database.DatabaseFactory;
 import org.smssecure.smssecure.database.IdentityDatabase;
-import org.smssecure.smssecure.database.MmsAddressDatabase;
-import org.smssecure.smssecure.database.MmsDatabase;
-import org.smssecure.smssecure.database.MmsSmsDatabase;
 import org.smssecure.smssecure.database.SmsDatabase;
 import org.smssecure.smssecure.database.documents.IdentityKeyMismatch;
 import org.smssecure.smssecure.database.model.MessageRecord;
 import org.smssecure.smssecure.jobs.SmsDecryptJob;
 import org.smssecure.smssecure.recipients.Recipient;
 import org.smssecure.smssecure.recipients.RecipientFactory;
-import org.smssecure.smssecure.recipients.Recipients;
-import org.smssecure.smssecure.sms.MessageSender;
-import org.smssecure.smssecure.util.Base64;
 import org.smssecure.smssecure.util.InvalidNumberException;
 import org.smssecure.smssecure.util.Util;
-
-import java.io.IOException;
 
 public class ConfirmIdentityDialog extends AlertDialog {
 
