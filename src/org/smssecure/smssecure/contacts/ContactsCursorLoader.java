@@ -17,8 +17,11 @@
 package org.smssecure.smssecure.contacts;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.MergeCursor;
+
+import androidx.core.content.ContextCompat;
 import androidx.loader.content.CursorLoader;
 import android.text.TextUtils;
 
@@ -36,31 +39,33 @@ public class ContactsCursorLoader extends CursorLoader {
 
   private static final String TAG = ContactsCursorLoader.class.getSimpleName();
 
-  private final String  filter;
-  private       boolean includeSmsContacts;
+  private final String filter;
+  private boolean includeSmsContacts;
 
   public ContactsCursorLoader(Context context, boolean includeSmsContacts, String filter) {
     super(context);
 
-    this.filter   = filter;
+    this.filter = filter;
     this.includeSmsContacts = includeSmsContacts;
   }
 
   @Override
   public Cursor loadInBackground() {
-    ContactsDatabase  contactsDatabase = DatabaseFactory.getContactsDatabase(getContext());
-    ArrayList<Cursor> cursorList       = new ArrayList<>(3);
+    ContactsDatabase contactsDatabase = DatabaseFactory.getContactsDatabase(getContext());
+    ArrayList<Cursor> cursorList = new ArrayList<>(3);
 
-    cursorList.add(contactsDatabase.querySilenceContacts(filter));
+    if (ContextCompat.checkSelfPermission(getContext(), android.Manifest.permission.READ_CONTACTS)
+                    == PackageManager.PERMISSION_GRANTED) {
 
-    if (includeSmsContacts) {
-      cursorList.add(contactsDatabase.querySystemContacts(filter));
+      cursorList.add(contactsDatabase.querySilenceContacts(filter));
+
+      if (includeSmsContacts) {
+        cursorList.add(contactsDatabase.querySystemContacts(filter));
+      }
     }
-
     if (!TextUtils.isEmpty(filter) && NumberUtil.isValidSmsOrEmail(filter)) {
       cursorList.add(contactsDatabase.getNewNumberCursor(filter));
     }
-
     return new MergeCursor(cursorList.toArray(new Cursor[0]));
   }
 }

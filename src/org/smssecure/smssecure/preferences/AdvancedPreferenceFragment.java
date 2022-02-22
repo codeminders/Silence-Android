@@ -32,7 +32,7 @@ public class AdvancedPreferenceFragment extends ListSummaryPreferenceFragment {
     if (SubscriptionManagerCompat.from(getActivity()).getActiveSubscriptionInfoList().size() <= 1) {
       this.findPreference(SilencePreferences.ASK_FOR_SIM_CARD).setVisible(false);
     }
-  }
+ }
 
   @Override
   public void onCreatePreferences(@Nullable Bundle savedInstanceState, String rootKey) {

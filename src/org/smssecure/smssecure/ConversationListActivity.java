@@ -268,7 +268,11 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
       }
     };
 
-    getContentResolver().registerContentObserver(ContactsContract.Contacts.CONTENT_URI,
-                                                 true, observer);
+    try {
+      getContentResolver().registerContentObserver(ContactsContract.Contacts.CONTENT_URI,
+              true, observer);
+    } catch (SecurityException se) {
+      Log.w(TAG, se);
+    }
   }
 }

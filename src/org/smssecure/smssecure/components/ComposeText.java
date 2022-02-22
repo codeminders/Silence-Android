@@ -12,6 +12,8 @@ import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 import androidx.core.os.BuildCompat;
+
+import android.text.InputFilter;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -151,6 +153,9 @@ public class ComposeText extends EmojiEditText {
     if (SilencePreferences.isIncognitoKeyboardEnabled(getContext())) {
       setImeOptions(getImeOptions() | 16777216);
     }
+    setFilters(new InputFilter[] {
+            new InputFilter.LengthFilter(SilencePreferences.getMaxMessageSize(getContext()))
+    });
   }
 
   @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB_MR2)

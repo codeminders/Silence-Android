@@ -95,6 +95,7 @@ public class SilencePreferences {
   public  static final String SYSTEM_EMOJI_PREF                = "pref_system_emoji";
   public  static final String INCOGNITO_KEYBORAD_PREF          = "pref_incognito_keyboard";
   public  static final String ASK_FOR_SIM_CARD                 = "pref_always_ask_for_sim_card";
+  public  static final String MAX_MESSAGE_SIZE                 = "pref_max_message_size";
 
   private static final String APP_SUBSCRIPTION_ID_FOR_DEVICE_SUBSCRIPTION_ID_PREF = "app_subscription_id_for_device_subscription_id";
   private static final String LAST_APP_SUBSCRIPTION_ID_PREF                       = "last_app_subscription_id";
@@ -181,6 +182,10 @@ public class SilencePreferences {
     } else {
       return getStringPreference(context, GCM_REGISTRATION_ID_PREF, null);
     }
+  }
+
+  public static int getMaxMessageSize(Context context) {
+    return Integer.parseInt(getStringPreference(context, MAX_MESSAGE_SIZE, null));
   }
 
   public static boolean isFallbackSmsAllowed(Context context) {

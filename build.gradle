@@ -119,7 +119,7 @@ android {
 
     defaultConfig {
         versionCode 212
-        versionName "0.15.16"
+        versionName "0.16.12-unstable-vk1"
         minSdk 23
 
         targetSdkVersion 32

@@ -33,6 +33,14 @@
                         android:title="@string/preferences_advanced__always_ask_for_sim_card"
                         android:summary="@string/preferences_advanced__always_ask_for_the_sim_card_to_use_when_sending_messages" />
 
+    <org.smssecure.smssecure.components.EditNumberPreference
+        android:defaultValue="140"
+        android:dialogMessage="@string/preferences_advanced__limit_number_of_message_characters"
+        android:dialogTitle="@string/preferences_advanced__max_message_size"
+        android:key="pref_max_message_size"
+        android:persistent="true"
+        android:title="@string/preferences_advanced__max_message_size"/>
+
     <Preference android:key="pref_submit_debug_logs"
                 android:title="@string/preferences__submit_debug_log"/>
 </PreferenceScreen>
