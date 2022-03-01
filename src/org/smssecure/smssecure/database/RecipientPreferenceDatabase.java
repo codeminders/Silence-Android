@@ -32,6 +32,7 @@ public class RecipientPreferenceDatabase extends Database {
   private static final String MUTE_UNTIL              = "mute_until";
   private static final String COLOR                   = "color";
   private static final String DEFAULT_SUBSCRIPTION_ID = "default_subscription_id";
+  private static final String USE_CLIPBOARD           = "use_clipboard";
 
   public enum VibrateState {
     DEFAULT(0), ENABLED(1), DISABLED(2);
@@ -60,7 +61,8 @@ public class RecipientPreferenceDatabase extends Database {
           VIBRATE + " INTEGER DEFAULT " + VibrateState.DEFAULT.getId() + ", " +
           MUTE_UNTIL + " INTEGER DEFAULT 0, " +
           COLOR + " TEXT DEFAULT NULL, " +
-          DEFAULT_SUBSCRIPTION_ID + " INTEGER DEFAULT -1);";
+          DEFAULT_SUBSCRIPTION_ID + " INTEGER DEFAULT -1, " +
+          USE_CLIPBOARD + " INTEGER DEFAULT 0);";
 
   public RecipientPreferenceDatabase(Context context, SQLiteOpenHelper databaseHelper) {
     super(context, databaseHelper);
@@ -95,6 +97,7 @@ public class RecipientPreferenceDatabase extends Database {
         String  serializedColor       = cursor.getString(cursor.getColumnIndexOrThrow(COLOR));
         Uri     notificationUri       = notification == null ? null : Uri.parse(notification);
         int     defaultSubscriptionId = cursor.getInt(cursor.getColumnIndexOrThrow(DEFAULT_SUBSCRIPTION_ID));
+        boolean useClipboard          = cursor.getInt(cursor.getColumnIndexOrThrow(USE_CLIPBOARD)) == 1;
 
         MaterialColor color;
 
@@ -109,7 +112,9 @@ public class RecipientPreferenceDatabase extends Database {
 
         return Optional.of(new RecipientsPreferences(blocked, muteUntil,
                                                      VibrateState.fromId(vibrateState),
-                                                     notificationUri, color, defaultSubscriptionId));
+                                                     notificationUri, color,
+                                                     defaultSubscriptionId,
+                                                     useClipboard));
       }
 
       return Optional.absent();
@@ -156,6 +161,12 @@ public class RecipientPreferenceDatabase extends Database {
     updateOrInsert(recipients, values);
   }
 
+  public void setUseClipboard(Recipients recipients, boolean useClipboard) {
+    ContentValues values = new ContentValues();
+    values.put(USE_CLIPBOARD, useClipboard);
+    updateOrInsert(recipients, values);
+  }
+
   private void updateOrInsert(Recipients recipients, ContentValues contentValues) {
     SQLiteDatabase database = databaseHelper.getWritableDatabase();
 
@@ -182,12 +193,14 @@ public class RecipientPreferenceDatabase extends Database {
     private final Uri           notification;
     private final MaterialColor color;
     private final int           defaultSubscriptionId;
+    private final boolean       useClipboard;
 
     public RecipientsPreferences(boolean blocked, long muteUntil,
                                  @NonNull VibrateState vibrateState,
                                  @Nullable Uri notification,
                                  @Nullable MaterialColor color,
-                                 int defaultSubscriptionId)
+                                 int defaultSubscriptionId,
+                                 boolean useClipboard)
     {
       this.blocked               = blocked;
       this.muteUntil             = muteUntil;
@@ -195,6 +208,7 @@ public class RecipientPreferenceDatabase extends Database {
       this.notification          = notification;
       this.color                 = color;
       this.defaultSubscriptionId = defaultSubscriptionId;
+      this.useClipboard          = useClipboard;
     }
 
     public @Nullable MaterialColor getColor() {
@@ -219,6 +233,10 @@ public class RecipientPreferenceDatabase extends Database {
 
     public Optional<Integer> getDefaultSubscriptionId() {
       return defaultSubscriptionId != -1 ? Optional.of(defaultSubscriptionId) : Optional.<Integer>absent();
+    }
+
+    public boolean isUseClipboard() {
+      return useClipboard;
     }
   }
 }

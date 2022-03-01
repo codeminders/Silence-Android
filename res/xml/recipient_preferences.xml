@@ -41,5 +41,12 @@
     <Preference android:key="pref_key_recipient_block"
                 android:title="@string/recipient_preferences__block" />
 
+    <org.smssecure.smssecure.components.SwitchPreferenceCompat
+        android:key="pref_key_recipient_clipboard"
+        android:title="@string/recipient_preferences__clipboard_transport"
+        android:summary="@string/recipient_preferences__use_clipboard_as_message_transport"
+        android:defaultValue="false"
+        android:disableDependentsState="true"
+        android:persistent="false" />
 
 </PreferenceScreen>

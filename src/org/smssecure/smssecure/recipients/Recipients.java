@@ -54,6 +54,7 @@ public class Recipients implements Iterable<Recipient>, RecipientModifiedListene
   private long         mutedUntil            = 0;
   private boolean      blocked               = false;
   private VibrateState vibrate               = VibrateState.DEFAULT;
+  private boolean      useClipboard          = false;
   private boolean      stale                 = false;
   private int          defaultSubscriptionId = -1;
 
@@ -70,6 +71,7 @@ public class Recipients implements Iterable<Recipient>, RecipientModifiedListene
       vibrate               = preferences.getVibrateState();
       blocked               = preferences.isBlocked();
       defaultSubscriptionId = preferences.getDefaultSubscriptionId().or(-1);
+      useClipboard          = preferences.isUseClipboard();
     }
   }
 
@@ -85,6 +87,7 @@ public class Recipients implements Iterable<Recipient>, RecipientModifiedListene
       vibrate               = stale.vibrate;
       blocked               = stale.blocked;
       defaultSubscriptionId = stale.defaultSubscriptionId;
+      useClipboard          = stale.useClipboard;
     }
 
     preferences.addListener(new FutureTaskListener<RecipientsPreferences>() {
@@ -100,6 +103,7 @@ public class Recipients implements Iterable<Recipient>, RecipientModifiedListene
             vibrate               = result.getVibrateState();
             blocked               = result.isBlocked();
             defaultSubscriptionId = result.getDefaultSubscriptionId().or(-1);
+            useClipboard          = result.isUseClipboard();
 
             localListeners = new HashSet<>(listeners);
           }
@@ -136,6 +140,18 @@ public class Recipients implements Iterable<Recipient>, RecipientModifiedListene
   public void setMuted(long mutedUntil) {
     synchronized (this) {
       this.mutedUntil = mutedUntil;
+    }
+
+    notifyListeners();
+  }
+
+  public synchronized boolean isUseClipboard() {
+    return useClipboard;
+  }
+
+  public void setUseClipboard(boolean useClipboard) {
+    synchronized (this) {
+      this.useClipboard = useClipboard;
     }
 
     notifyListeners();

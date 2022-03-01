@@ -75,13 +75,14 @@ public class DatabaseFactory {
   private static final int INTRODUCED_LAST_SEEN                            = 29;
   private static final int INTRODUCED_NOTIFIED                             = 30;
   private static final int INTRODUCED_DIGEST                               = 31;
+  private static final int INTRODUCED_USE_CLIPBOARD                        = 32;
 
   /*
    * Yes, INTRODUCED_XMPP_TRANSPORT > DATABASE_VERSION to allow database
    * downgrade when XMPP transport will be included in unstable branch.
    */
-  private static final int INTRODUCED_XMPP_TRANSPORT                       = 32;
-  private static final int DATABASE_VERSION                                = 31;
+  private static final int INTRODUCED_XMPP_TRANSPORT                       = 33;
+  private static final int DATABASE_VERSION                                = 32;
 
   private static final String DATABASE_NAME    = "messages.db";
   private static final Object lock             = new Object();
@@ -569,6 +570,10 @@ public class DatabaseFactory {
 
       if (oldVersion < INTRODUCED_DIGEST) {
         db.execSQL("ALTER TABLE part ADD COLUMN digest BLOB");
+      }
+
+      if (oldVersion < INTRODUCED_USE_CLIPBOARD) {
+        db.execSQL("ALTER TABLE recipient_preferences ADD COLUMN use_clipboard INTEGER DEFAULT 0");
       }
 
       db.setTransactionSuccessful();

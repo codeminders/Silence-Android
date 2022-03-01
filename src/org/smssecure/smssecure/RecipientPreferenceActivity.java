@@ -51,6 +51,7 @@ public class RecipientPreferenceActivity extends PassphraseRequiredActionBarActi
   private static final String PREFERENCE_VIBRATE = "pref_key_recipient_vibrate";
   private static final String PREFERENCE_BLOCK   = "pref_key_recipient_block";
   private static final String PREFERENCE_COLOR   = "pref_key_recipient_color";
+  private static final String PREFERENCE_CLIPBOARD = "pref_key_recipient_clipboard";
 
   private final DynamicTheme    dynamicTheme    = new DynamicNoActionBarTheme();
   private final DynamicLanguage dynamicLanguage = new DynamicLanguage();
@@ -175,6 +176,8 @@ public class RecipientPreferenceActivity extends PassphraseRequiredActionBarActi
           .setOnPreferenceClickListener(new BlockClickedListener());
       this.findPreference(PREFERENCE_COLOR)
           .setOnPreferenceChangeListener(new ColorChangeListener());
+      this.findPreference(PREFERENCE_CLIPBOARD)
+          .setOnPreferenceClickListener(new ClipboardClickedListener());
     }
 
     @Override
@@ -195,13 +198,15 @@ public class RecipientPreferenceActivity extends PassphraseRequiredActionBarActi
     }
 
     private void setSummaries(Recipients recipients) {
-      CheckBoxPreference         mutePreference     = (CheckBoxPreference) this.findPreference(PREFERENCE_MUTED);
-      AdvancedRingtonePreference ringtonePreference = (AdvancedRingtonePreference) this.findPreference(PREFERENCE_TONE);
-      ListPreference             vibratePreference  = (ListPreference) this.findPreference(PREFERENCE_VIBRATE);
-      ColorPickerPreference      colorPreference    = (ColorPickerPreference) this.findPreference(PREFERENCE_COLOR);
-      Preference                 blockPreference    = this.findPreference(PREFERENCE_BLOCK);
+      CheckBoxPreference         mutePreference      = (CheckBoxPreference) this.findPreference(PREFERENCE_MUTED);
+      AdvancedRingtonePreference ringtonePreference  = (AdvancedRingtonePreference) this.findPreference(PREFERENCE_TONE);
+      ListPreference             vibratePreference   = (ListPreference) this.findPreference(PREFERENCE_VIBRATE);
+      ColorPickerPreference      colorPreference     = (ColorPickerPreference) this.findPreference(PREFERENCE_COLOR);
+      CheckBoxPreference         clipboardPreference = (CheckBoxPreference) this.findPreference(PREFERENCE_CLIPBOARD);
+      Preference                 blockPreference     = this.findPreference(PREFERENCE_BLOCK);
 
       mutePreference.setChecked(recipients.isMuted());
+      clipboardPreference.setChecked(recipients.isUseClipboard());
 
       final Uri toneUri = recipients.getRingtone();
 
@@ -411,6 +416,28 @@ public class RecipientPreferenceActivity extends PassphraseRequiredActionBarActi
           protected Void doInBackground(Void... params) {
             DatabaseFactory.getRecipientPreferenceDatabase(getActivity())
                            .setBlocked(recipients, blocked);
+            return null;
+          }
+        }.execute();
+      }
+    }
+
+    private class ClipboardClickedListener implements Preference.OnPreferenceClickListener {
+      @Override
+      public boolean onPreferenceClick(Preference preference) {
+        setUseClipboard(recipients, !recipients.isUseClipboard());
+
+        return true;
+      }
+
+      private void setUseClipboard(final Recipients recipients, final boolean useClipboard) {
+        recipients.setUseClipboard(useClipboard);
+
+        new AsyncTask<Void, Void, Void>() {
+          @Override
+          protected Void doInBackground(Void... params) {
+            DatabaseFactory.getRecipientPreferenceDatabase(getActivity())
+                    .setUseClipboard(recipients, useClipboard);
             return null;
           }
         }.execute();
