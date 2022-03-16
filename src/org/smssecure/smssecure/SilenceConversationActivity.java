@@ -16,11 +16,14 @@
  */
 package org.smssecure.smssecure;
 
+import static android.content.ClipDescription.MIMETYPE_TEXT_PLAIN;
 import static org.smssecure.smssecure.TransportOption.Type;
 
 import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -51,7 +54,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.view.View.OnKeyListener;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -70,12 +72,7 @@ import org.smssecure.smssecure.audio.AudioSlidePlayer;
 import org.smssecure.smssecure.color.MaterialColor;
 import org.smssecure.smssecure.components.ComposeText;
 import org.smssecure.smssecure.components.InputAwareLayout;
-import org.smssecure.smssecure.components.KeyboardAwareLinearLayout.OnKeyboardShownListener;
-import org.smssecure.smssecure.components.SendButton;
 import org.smssecure.smssecure.components.SendTextButton;
-import org.smssecure.smssecure.components.emoji.EmojiDrawer;
-import org.smssecure.smssecure.components.emoji.EmojiDrawer.EmojiEventListener;
-import org.smssecure.smssecure.components.emoji.EmojiToggle;
 import org.smssecure.smssecure.contacts.ContactAccessor;
 import org.smssecure.smssecure.contacts.ContactAccessor.ContactData;
 import org.smssecure.smssecure.crypto.KeyExchangeInitiator;
@@ -122,7 +119,6 @@ import org.smssecure.smssecure.util.concurrent.ListenableFuture;
 import org.smssecure.smssecure.util.concurrent.SettableFuture;
 import org.smssecure.smssecure.util.dualsim.SubscriptionInfoCompat;
 import org.smssecure.smssecure.util.dualsim.SubscriptionManagerCompat;
-import org.smssecure.smssecure.util.views.Stub;
 import org.whispersystems.libsignal.InvalidMessageException;
 import org.whispersystems.libsignal.util.guava.Optional;
 
@@ -133,7 +129,6 @@ import java.util.List;
  * composing/sending a new message into that thread.
  *
  * @author Moxie Marlinspike
- *
  */
 public class SilenceConversationActivity extends PassphraseRequiredActionBarActivity
         implements ConversationFragment.ConversationFragmentListener,
@@ -1517,18 +1512,65 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         updateRecipientPreferences();
     }
 
-    private void showDecodeSecureMessagePopUp(){
+    private void showDecodeSecureMessagePopUp() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Paste message");
         View viewInflated = LayoutInflater.from(this).inflate(R.layout.silence_decode_message_dialog, null);
         final EditText input = (EditText) viewInflated.findViewById(R.id.input);
         final Button paste = (Button) viewInflated.findViewById(R.id.paste_button);
+        input.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                autoCopyTextToClipBoardIfSupported(editable.toString());
+            }
+        });
+        paste.setOnClickListener(view -> {
+            final String textToPaste = pasteClipboardText();
+            if (textToPaste!=null){
+                input.setText(textToPaste);
+            }
+        });
 
         builder.setView(viewInflated);
 
         builder.setPositiveButton(android.R.string.ok, (dialog, which) -> dialog.dismiss());
 
         builder.show();
+    }
+
+    private void autoCopyTextToClipBoardIfSupported(final String textToCopy) {
+        if (getRecipients().isUseClipboard()) {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("messageCopy", textToCopy);
+            clipboard.setPrimaryClip(clip);
+        }
+    }
+
+    @Nullable
+    private String pasteClipboardText() {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        // If it does contain data, decide if you can handle the data.
+        if (!(clipboard.hasPrimaryClip())) {
+            return null;
+        } else if (!(clipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN))) {
+            return null;
+            // since the clipboard has data but it is not plain text
+        } else {
+            //since the clipboard contains plain text.
+            ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+            // Gets the clipboard as text.
+            return item.getText().toString();
+        }
     }
 
     private class RecipientPreferencesTask extends AsyncTask<Recipients, Void, Pair<Recipients, RecipientsPreferences>> {
