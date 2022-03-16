@@ -943,6 +943,8 @@
     <string name="Permissions_continue">Continue</string>
     <string name="Permissions_not_now">Not now</string>
 
+    <string name="receive">receive</string>
+
     <!-- EOF -->
 
 </resources>
