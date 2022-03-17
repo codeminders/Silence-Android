@@ -74,6 +74,7 @@ import org.smssecure.smssecure.util.SaveAttachmentTask;
 import org.smssecure.smssecure.util.SaveAttachmentTask.Attachment;
 import org.smssecure.smssecure.util.StickyHeaderDecoration;
 import org.smssecure.smssecure.util.ViewUtil;
+import org.smssecure.smssecure.util.views.CopyEncryptedTextUtils;
 import org.whispersystems.libsignal.UntrustedIdentityException;
 
 import java.util.Collections;
@@ -322,23 +323,7 @@ public class ConversationFragment extends Fragment
 
       @Override
       protected void onPostExecute(List<String> result) {
-        if (result != null) {
-          StringBuilder    bodyBuilder = new StringBuilder();
-          ClipboardManager clipboard   = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
-
-            for (String encryptedMessage : result) {
-              bodyBuilder.append(encryptedMessage);
-            }
-
-          String resultEncodedString = bodyBuilder.toString();
-          Log.d("TEST", "resultEncodedString="+resultEncodedString);
-
-          if (!TextUtils.isEmpty(resultEncodedString))
-            clipboard.setText(resultEncodedString);
-          Toast.makeText(requireActivity(),
-                  requireContext().getString(R.string.log_submit_activity__copied_to_clipboard),
-                  Toast.LENGTH_LONG).show();
-        }
+        CopyEncryptedTextUtils.copyEncryptedTextToClipboard(requireActivity(), result);
       }
     }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, messageRecord);
   }

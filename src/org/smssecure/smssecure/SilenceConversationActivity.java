@@ -122,6 +122,7 @@ import org.smssecure.smssecure.util.concurrent.ListenableFuture;
 import org.smssecure.smssecure.util.concurrent.SettableFuture;
 import org.smssecure.smssecure.util.dualsim.SubscriptionInfoCompat;
 import org.smssecure.smssecure.util.dualsim.SubscriptionManagerCompat;
+import org.smssecure.smssecure.util.views.CopyEncryptedTextUtils;
 import org.whispersystems.libsignal.InvalidMessageException;
 import org.whispersystems.libsignal.UntrustedIdentityException;
 import org.whispersystems.libsignal.util.guava.Optional;
@@ -1404,12 +1405,9 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
 
                         @Override
                         protected void onPostExecute(EncryptedMultipartMessage result) {
-                            if (result != null) {
-                                Toast.makeText(context.getApplicationContext(),
-                                        context.getString(R.string.MessageNotifier_message_received, result.getMultipartEncryptedText()),
-                                        Toast.LENGTH_LONG).show();
-
-                                sendComplete(result.getAllocatedThreadId());
+                            if (result!=null){
+                            CopyEncryptedTextUtils.copyEncryptedTextToClipboard(context, result.getMultipartEncryptedText());
+                            sendComplete(result.getAllocatedThreadId());
                             }
                         }
                     }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);
