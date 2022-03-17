@@ -10,12 +10,10 @@ import android.telephony.SmsManager;
 import android.util.Log;
 
 import org.smssecure.smssecure.crypto.MasterSecret;
-import org.smssecure.smssecure.crypto.SmsCipher;
-import org.smssecure.smssecure.crypto.storage.SilenceSignalProtocolStore;
+import org.smssecure.smssecure.crypto.TextMessageEncryptingUtils;
 import org.smssecure.smssecure.database.DatabaseFactory;
 import org.smssecure.smssecure.database.EncryptingSmsDatabase;
 import org.smssecure.smssecure.database.NoSuchMessageException;
-import org.smssecure.smssecure.database.SmsDatabase;
 import org.smssecure.smssecure.database.model.SmsMessageRecord;
 import org.smssecure.smssecure.jobs.requirements.MasterSecretRequirement;
 import org.smssecure.smssecure.jobs.requirements.NetworkOrServiceRequirement;
@@ -23,14 +21,11 @@ import org.smssecure.smssecure.jobs.requirements.ServiceRequirement;
 import org.smssecure.smssecure.notifications.MessageNotifier;
 import org.smssecure.smssecure.recipients.Recipients;
 import org.smssecure.smssecure.service.SmsDeliveryListener;
-import org.smssecure.smssecure.sms.MultipartSmsMessageHandler;
-import org.smssecure.smssecure.sms.OutgoingTextMessage;
 import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.smssecure.smssecure.util.dualsim.DualSimUtil;
 import org.smssecure.smssecure.util.NumberUtil;
 import org.smssecure.smssecure.util.SilencePreferences;
 import org.whispersystems.jobqueue.JobParameters;
-import org.whispersystems.libsignal.NoSessionException;
 import org.whispersystems.libsignal.UntrustedIdentityException;
 
 import java.util.ArrayList;
@@ -90,7 +85,6 @@ public class SmsSendJob extends SendJob {
       throws UndeliverableMessageException, UntrustedIdentityException
   {
     String recipient = message.getIndividualRecipient().getNumber();
-    ArrayList<String> messages;
 
     // See issue #1516 for bug report, and discussion on commits related to #4833 for problems
     // related to the original fix to #1516. This still may not be a correct fix if networks allow
@@ -104,18 +98,7 @@ public class SmsSendJob extends SendJob {
       throw new UndeliverableMessageException("Not a valid SMS destination! " + recipient);
     }
 
-    if (message.isSecure() || message.isKeyExchange() || message.isEndSession()) {
-      MultipartSmsMessageHandler multipartMessageHandler = new MultipartSmsMessageHandler();
-      OutgoingTextMessage        transportMessage        = OutgoingTextMessage.from(message);
-
-      if (!message.isKeyExchange()) {
-        transportMessage = getAsymmetricEncrypt(masterSecret, transportMessage);
-      }
-
-      messages = SmsManager.getDefault().divideMessage(multipartMessageHandler.getEncodedMessage(transportMessage));
-    } else {
-      messages = SmsManager.getDefault().divideMessage(message.getBody().getBody());
-    }
+    ArrayList<String> messages = TextMessageEncryptingUtils.encryptMultipartText(masterSecret, message, context);
 
     ArrayList<PendingIntent> sentIntents      = constructSentIntents(message.getId(), message.getType(), messages, message.isSecure());
     ArrayList<PendingIntent> deliveredIntents = constructDeliveredIntents(message.getId(), message.getType(), messages);
@@ -140,18 +123,6 @@ public class SmsSendJob extends SendJob {
       Log.w(TAG, se);
       throw new UndeliverableMessageException(se);
     } 
-  }
-
-  private OutgoingTextMessage getAsymmetricEncrypt(MasterSecret masterSecret,
-                                                   OutgoingTextMessage message)
-      throws UndeliverableMessageException, UntrustedIdentityException
-
-  {
-    try {
-      return new SmsCipher(new SilenceSignalProtocolStore(context, masterSecret, message.getSubscriptionId())).encrypt(message);
-    } catch (NoSessionException e) {
-      throw new UndeliverableMessageException(e);
-    }
   }
 
   private ArrayList<PendingIntent> constructSentIntents(long messageId, long type,

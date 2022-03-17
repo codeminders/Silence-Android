@@ -18,15 +18,16 @@ package org.smssecure.smssecure.sms;
 
 import android.content.Context;
 import android.util.Log;
-import android.util.Pair;
 
 import org.smssecure.smssecure.ApplicationContext;
+import org.smssecure.smssecure.crypto.EncryptedMultipartMessage;
 import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.attachments.Attachment;
+import org.smssecure.smssecure.crypto.TextMessageEncryptingUtils;
 import org.smssecure.smssecure.database.DatabaseFactory;
 import org.smssecure.smssecure.database.EncryptingSmsDatabase;
 import org.smssecure.smssecure.database.MmsDatabase;
-import org.smssecure.smssecure.database.NotInDirectoryException;
+import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.database.ThreadDatabase;
 import org.smssecure.smssecure.database.model.MessageRecord;
 import org.smssecure.smssecure.jobs.MmsSendJob;
@@ -34,15 +35,11 @@ import org.smssecure.smssecure.jobs.SmsSendJob;
 import org.smssecure.smssecure.mms.MmsException;
 import org.smssecure.smssecure.mms.OutgoingMediaMessage;
 import org.smssecure.smssecure.mms.OutgoingSecureMediaMessage;
-import org.smssecure.smssecure.recipients.Recipient;
 import org.smssecure.smssecure.recipients.Recipients;
-import org.smssecure.smssecure.util.InvalidNumberException;
-import org.smssecure.smssecure.util.SilencePreferences;
-import org.smssecure.smssecure.util.Util;
+import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.whispersystems.jobqueue.JobManager;
-import org.whispersystems.libsignal.util.guava.Optional;
+import org.whispersystems.libsignal.UntrustedIdentityException;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -72,6 +69,29 @@ public class MessageSender {
     sendTextMessage(context, recipients, messageId);
 
     return allocatedThreadId;
+  }
+
+  public static EncryptedMultipartMessage encrypt(final Context context,
+                                                   final MasterSecret masterSecret,
+                                                   final OutgoingTextMessage message,
+                                                   final long threadId)
+          throws NoSuchMessageException, UntrustedIdentityException, UndeliverableMessageException
+  {
+    EncryptingSmsDatabase database    = DatabaseFactory.getEncryptingSmsDatabase(context);
+    Recipients            recipients  = message.getRecipients();
+
+    long allocatedThreadId;
+
+    if (threadId == -1) {
+      allocatedThreadId = DatabaseFactory.getThreadDatabase(context).getThreadIdFor(recipients);
+    } else {
+      allocatedThreadId = threadId;
+    }
+
+    long messageId = database.insertMessageOutbox(masterSecret, allocatedThreadId, message, false, System.currentTimeMillis());
+
+    List<String> encryptedMessages = TextMessageEncryptingUtils.encrypt(context, masterSecret, messageId);
+    return new EncryptedMultipartMessage(allocatedThreadId, messageId, 0, encryptedMessages, message.getMessageBody());
   }
 
   public static long send(final Context context,
