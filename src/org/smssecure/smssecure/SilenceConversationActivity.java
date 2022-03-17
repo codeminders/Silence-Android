@@ -75,6 +75,7 @@ import org.smssecure.smssecure.components.InputAwareLayout;
 import org.smssecure.smssecure.components.SendTextButton;
 import org.smssecure.smssecure.contacts.ContactAccessor;
 import org.smssecure.smssecure.contacts.ContactAccessor.ContactData;
+import org.smssecure.smssecure.crypto.EncryptedMultipartMessage;
 import org.smssecure.smssecure.crypto.KeyExchangeInitiator;
 import org.smssecure.smssecure.crypto.MasterCipher;
 import org.smssecure.smssecure.crypto.MasterSecret;
@@ -85,6 +86,7 @@ import org.smssecure.smssecure.database.DraftDatabase;
 import org.smssecure.smssecure.database.DraftDatabase.Draft;
 import org.smssecure.smssecure.database.DraftDatabase.Drafts;
 import org.smssecure.smssecure.database.MmsSmsColumns.Types;
+import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.database.RecipientPreferenceDatabase.RecipientsPreferences;
 import org.smssecure.smssecure.database.ThreadDatabase;
 import org.smssecure.smssecure.mms.AttachmentManager;
@@ -106,6 +108,7 @@ import org.smssecure.smssecure.service.KeyCachingService;
 import org.smssecure.smssecure.sms.MessageSender;
 import org.smssecure.smssecure.sms.OutgoingEncryptedMessage;
 import org.smssecure.smssecure.sms.OutgoingTextMessage;
+import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.smssecure.smssecure.util.CharacterCalculator.CharacterState;
 import org.smssecure.smssecure.util.Dialogs;
 import org.smssecure.smssecure.util.DynamicLanguage;
@@ -120,6 +123,7 @@ import org.smssecure.smssecure.util.concurrent.SettableFuture;
 import org.smssecure.smssecure.util.dualsim.SubscriptionInfoCompat;
 import org.smssecure.smssecure.util.dualsim.SubscriptionManagerCompat;
 import org.whispersystems.libsignal.InvalidMessageException;
+import org.whispersystems.libsignal.UntrustedIdentityException;
 import org.whispersystems.libsignal.util.guava.Optional;
 
 import java.util.List;
@@ -1383,15 +1387,30 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
                 .onAllGranted(() -> {
                     this.composeText.setText("");
 
-                    new AsyncTask<OutgoingTextMessage, Void, Long>() {
+                    new AsyncTask<OutgoingTextMessage, Void, EncryptedMultipartMessage>() {
                         @Override
-                        protected Long doInBackground(OutgoingTextMessage... messages) {
-                            return MessageSender.send(context, masterSecret, messages[0], threadId, true);
+                        protected EncryptedMultipartMessage doInBackground(OutgoingTextMessage... messages) {
+                            try {
+                                return MessageSender.encrypt(context, masterSecret, messages[0], threadId);
+                            } catch (NoSuchMessageException e) {
+                                e.printStackTrace();
+                            } catch (UntrustedIdentityException e) {
+                                e.printStackTrace();
+                            } catch (UndeliverableMessageException e) {
+                                e.printStackTrace();
+                            }
+                            return null;
                         }
 
                         @Override
-                        protected void onPostExecute(Long result) {
-                            sendComplete(result);
+                        protected void onPostExecute(EncryptedMultipartMessage result) {
+                            if (result != null) {
+                                Toast.makeText(context.getApplicationContext(),
+                                        context.getString(R.string.MessageNotifier_message_received, result.getMultipartEncryptedText()),
+                                        Toast.LENGTH_LONG).show();
+
+                                sendComplete(result.getAllocatedThreadId());
+                            }
                         }
                     }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);
 

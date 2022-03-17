@@ -53,9 +53,12 @@ import android.widget.Toast;
 
 import org.smssecure.smssecure.ConversationAdapter.HeaderViewHolder;
 import org.smssecure.smssecure.ConversationAdapter.ItemClickListener;
+import org.smssecure.smssecure.crypto.EncryptedMultipartMessage;
 import org.smssecure.smssecure.crypto.MasterSecret;
+import org.smssecure.smssecure.crypto.TextMessageEncryptingUtils;
 import org.smssecure.smssecure.database.DatabaseFactory;
 import org.smssecure.smssecure.database.MmsSmsDatabase;
+import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.database.loaders.ConversationLoader;
 import org.smssecure.smssecure.database.model.MediaMmsMessageRecord;
 import org.smssecure.smssecure.database.model.MessageRecord;
@@ -63,12 +66,15 @@ import org.smssecure.smssecure.mms.Slide;
 import org.smssecure.smssecure.recipients.RecipientFactory;
 import org.smssecure.smssecure.recipients.Recipients;
 import org.smssecure.smssecure.sms.MessageSender;
+import org.smssecure.smssecure.sms.OutgoingTextMessage;
+import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.smssecure.smssecure.util.SilencePreferences;
 import org.smssecure.smssecure.util.task.ProgressDialogAsyncTask;
 import org.smssecure.smssecure.util.SaveAttachmentTask;
 import org.smssecure.smssecure.util.SaveAttachmentTask.Attachment;
 import org.smssecure.smssecure.util.StickyHeaderDecoration;
 import org.smssecure.smssecure.util.ViewUtil;
+import org.whispersystems.libsignal.UntrustedIdentityException;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -277,15 +283,64 @@ public class ConversationFragment extends Fragment
         else return 1;
       }
     });
+    StringBuilder    bodyBuilder = new StringBuilder();
+    ClipboardManager clipboard   = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+    boolean          first       = true;
+
+    for (MessageRecord messageRecord : messageList) {
+      String body = messageRecord.getDisplayBody().toString();
+
+      if (body != null) {
+        if (!first) bodyBuilder.append('\n');
+        bodyBuilder.append(body);
+        first = false;
+      }
+    }
+
+    String result = bodyBuilder.toString();
+
+    if (!TextUtils.isEmpty(result))
+      clipboard.setText(result);
   }
 
   private void handleCopySingleMessage(final MessageRecord messageRecord){
-    ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
 
-    String body = messageRecord.getDisplayBody().toString();
+    new AsyncTask<MessageRecord, Void, List<String>>() {
+      @Override
+      protected List<String> doInBackground(MessageRecord... messages) {
+        try {
+          return TextMessageEncryptingUtils.encrypt(requireContext(), masterSecret, messages[0].getId());
+        } catch (NoSuchMessageException e) {
+          e.printStackTrace();
+        } catch (UntrustedIdentityException e) {
+          e.printStackTrace();
+        } catch (UndeliverableMessageException e) {
+          e.printStackTrace();
+        }
+        return null;
+      }
 
-    if (!TextUtils.isEmpty(body))
-      clipboard.setText(body);
+      @Override
+      protected void onPostExecute(List<String> result) {
+        if (result != null) {
+          StringBuilder    bodyBuilder = new StringBuilder();
+          ClipboardManager clipboard   = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+
+            for (String encryptedMessage : result) {
+              bodyBuilder.append(encryptedMessage);
+            }
+
+          String resultEncodedString = bodyBuilder.toString();
+          Log.d("TEST", "resultEncodedString="+resultEncodedString);
+
+          if (!TextUtils.isEmpty(resultEncodedString))
+            clipboard.setText(resultEncodedString);
+          Toast.makeText(requireActivity(),
+                  requireContext().getString(R.string.log_submit_activity__copied_to_clipboard),
+                  Toast.LENGTH_LONG).show();
+        }
+      }
+    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, messageRecord);
   }
 
   private void handleDeleteMessages(final Set<MessageRecord> messageRecords) {
