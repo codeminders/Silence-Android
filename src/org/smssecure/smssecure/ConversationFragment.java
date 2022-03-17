@@ -272,30 +272,20 @@ public class ConversationFragment extends Fragment
     Collections.sort(messageList, new Comparator<MessageRecord>() {
       @Override
       public int compare(MessageRecord lhs, MessageRecord rhs) {
-        if      (lhs.getDateReceived() < rhs.getDateReceived())  return -1;
+        if (lhs.getDateReceived() < rhs.getDateReceived()) return -1;
         else if (lhs.getDateReceived() == rhs.getDateReceived()) return 0;
-        else                                                     return 1;
+        else return 1;
       }
     });
+  }
 
-    StringBuilder    bodyBuilder = new StringBuilder();
-    ClipboardManager clipboard   = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
-    boolean          first       = true;
+  private void handleCopySingleMessage(final MessageRecord messageRecord){
+    ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
 
-    for (MessageRecord messageRecord : messageList) {
-      String body = messageRecord.getDisplayBody().toString();
+    String body = messageRecord.getDisplayBody().toString();
 
-      if (body != null) {
-        if (!first) bodyBuilder.append('\n');
-        bodyBuilder.append(body);
-        first = false;
-      }
-    }
-
-    String result = bodyBuilder.toString();
-
-    if (!TextUtils.isEmpty(result))
-        clipboard.setText(result);
+    if (!TextUtils.isEmpty(body))
+      clipboard.setText(body);
   }
 
   private void handleDeleteMessages(final Set<MessageRecord> messageRecords) {
@@ -537,6 +527,7 @@ public class ConversationFragment extends Fragment
 
     @Override
     public void onItemClick(ConversationItem item) {
+      handleCopySingleMessage(item.getMessageRecord());
       if (actionMode != null) {
         MessageRecord messageRecord = item.getMessageRecord();
         ((ConversationAdapter) list.getAdapter()).toggleSelection(messageRecord);
