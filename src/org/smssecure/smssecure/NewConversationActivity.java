@@ -48,9 +48,9 @@ public class NewConversationActivity extends ContactSelectionActivity {
   public void onContactSelected(String number) {
     Recipients recipients = RecipientFactory.getRecipientsFromString(this, number, true);
 
-    Intent intent = new Intent(this, ConversationActivity.class);
-    intent.putExtra(ConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
-    intent.putExtra(ConversationActivity.TEXT_EXTRA, getIntent().getStringExtra(ConversationActivity.TEXT_EXTRA));
+    Intent intent = new Intent(this, SilenceConversationActivity.class);
+    intent.putExtra(SilenceConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
+    intent.putExtra(SilenceConversationActivity.TEXT_EXTRA, getIntent().getStringExtra(ConversationActivity.TEXT_EXTRA));
     intent.setDataAndType(getIntent().getData(), getIntent().getType());
 
     long existingThread = DatabaseFactory.getThreadDatabase(this).getThreadIdIfExistsFor(recipients);

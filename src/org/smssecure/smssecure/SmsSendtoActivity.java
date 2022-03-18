@@ -47,10 +47,10 @@ public class SmsSendtoActivity extends Activity {
       nextIntent.putExtra(ConversationActivity.TEXT_EXTRA, destination.getBody());
       Toast.makeText(this, R.string.ConversationActivity_specify_recipient, Toast.LENGTH_LONG).show();
     } else {
-      nextIntent = new Intent(this, ConversationActivity.class);
-      nextIntent.putExtra(ConversationActivity.TEXT_EXTRA, destination.getBody());
-      nextIntent.putExtra(ConversationActivity.THREAD_ID_EXTRA, threadId);
-      nextIntent.putExtra(ConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
+      nextIntent = new Intent(this, SilenceConversationActivity.class);
+      nextIntent.putExtra(SilenceConversationActivity.TEXT_EXTRA, destination.getBody());
+      nextIntent.putExtra(SilenceConversationActivity.THREAD_ID_EXTRA, threadId);
+      nextIntent.putExtra(SilenceConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
     }
     return nextIntent;
   }

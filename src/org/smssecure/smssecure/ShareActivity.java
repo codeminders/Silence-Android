@@ -180,10 +180,10 @@ public class ShareActivity extends PassphraseRequiredActionBarActivity
   }
 
   private void createConversation(long threadId, Recipients recipients, int distributionType) {
-    final Intent intent = getBaseShareIntent(ConversationActivity.class);
-    intent.putExtra(ConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
-    intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, threadId);
-    intent.putExtra(ConversationActivity.DISTRIBUTION_TYPE_EXTRA, distributionType);
+    final Intent intent = getBaseShareIntent(SilenceConversationActivity.class);
+    intent.putExtra(SilenceConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
+    intent.putExtra(SilenceConversationActivity.THREAD_ID_EXTRA, threadId);
+    intent.putExtra(SilenceConversationActivity.DISTRIBUTION_TYPE_EXTRA, distributionType);
 
     isPassingAlongMedia = true;
     startActivity(intent);
@@ -192,7 +192,7 @@ public class ShareActivity extends PassphraseRequiredActionBarActivity
   private Intent getBaseShareIntent(final @NonNull Class<?> target) {
     final Intent intent      = new Intent(this, target);
     final String textExtra   = getIntent().getStringExtra(Intent.EXTRA_TEXT);
-    intent.putExtra(ConversationActivity.TEXT_EXTRA, textExtra);
+    intent.putExtra(SilenceConversationActivity.TEXT_EXTRA, textExtra);
     if (resolvedExtra != null) intent.setDataAndType(resolvedExtra, mimeType);
 
     return intent;

@@ -141,6 +141,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         RecipientsModifiedListener,
         ComposeText.MediaListener {
     private static final String TAG = SilenceConversationActivity.class.getSimpleName();
+    private static final String PASTE_DIALOG_SHOW = "paste_dialog_show";
 
     public static final String RECIPIENTS_EXTRA = "recipients";
     public static final String THREAD_ID_EXTRA = "thread_id";
@@ -181,6 +182,8 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     private boolean archived;
     private boolean isMmsEnabled = true;
 
+    private boolean pasteDialogIsShown = false;
+
     private DynamicTheme dynamicTheme = new DynamicTheme();
     private DynamicLanguage dynamicLanguage = new DynamicLanguage();
 
@@ -195,6 +198,9 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     @Override
     protected void onCreate(Bundle state, @NonNull MasterSecret masterSecret) {
         Log.w(TAG, "onCreate()");
+        if (state != null) {
+            pasteDialogIsShown = state.getBoolean(PASTE_DIALOG_SHOW, false);
+        }
         this.masterSecret = masterSecret;
         this.activeSubscriptions = SubscriptionManagerCompat.from(this).getActiveSubscriptionInfoList();
 
@@ -237,6 +243,12 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         if (fragment != null) {
             fragment.onNewIntent();
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean(PASTE_DIALOG_SHOW, pasteDialogIsShown);
+        super.onSaveInstanceState(savedInstanceState);
     }
 
     @Override
@@ -1529,47 +1541,31 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         updateRecipientPreferences();
     }
 
+
     private void showDecodeSecureMessagePopUp() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Paste message");
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.silence_decode_message_dialog, null);
-        final EditText input = (EditText) viewInflated.findViewById(R.id.input);
-        final Button paste = (Button) viewInflated.findViewById(R.id.paste_button);
-        input.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        if (!pasteDialogIsShown) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Paste message");
+            View viewInflated = LayoutInflater.from(this).inflate(R.layout.silence_decode_message_dialog, null);
+            final EditText input = (EditText) viewInflated.findViewById(R.id.input);
+            final Button paste = (Button) viewInflated.findViewById(R.id.paste_button);
+            paste.setOnClickListener(view -> {
+                final String textToPaste = pasteClipboardText();
+                if (textToPaste != null) {
+                    input.setText(textToPaste);
+                }
+            });
 
-            }
+            builder.setView(viewInflated);
 
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            builder.setPositiveButton(android.R.string.ok, (dialog, which) ->
+            {
+                // todo add decode here
+                dialog.dismiss();
+            });
 
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-                autoCopyTextToClipBoardIfSupported(editable.toString());
-            }
-        });
-        paste.setOnClickListener(view -> {
-            final String textToPaste = pasteClipboardText();
-            if (textToPaste!=null){
-                input.setText(textToPaste);
-            }
-        });
-
-        builder.setView(viewInflated);
-
-        builder.setPositiveButton(android.R.string.ok, (dialog, which) -> dialog.dismiss());
-
-        builder.show();
-    }
-
-    private void autoCopyTextToClipBoardIfSupported(final String textToCopy) {
-        if (getRecipients().isUseClipboard()) {
-            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("messageCopy", textToCopy);
-            clipboard.setPrimaryClip(clip);
+            builder.show();
+            pasteDialogIsShown = true;
         }
     }
 
