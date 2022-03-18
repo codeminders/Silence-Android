@@ -185,7 +185,7 @@ public class SilencePreferences {
   }
 
   public static int getMaxMessageSize(Context context) {
-    return Integer.parseInt(getStringPreference(context, MAX_MESSAGE_SIZE, "140"));
+    return Integer.parseInt(getStringPreference(context, MAX_MESSAGE_SIZE, null));
   }
 
   public static boolean isFallbackSmsAllowed(Context context) {
