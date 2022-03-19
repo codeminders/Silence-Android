@@ -3,27 +3,30 @@ package org.smssecure.smssecure.crypto;
 import android.content.Context;
 import android.telephony.SmsManager;
 
+import org.smssecure.smssecure.ApplicationContext;
 import org.smssecure.smssecure.crypto.storage.SilenceSignalProtocolStore;
 import org.smssecure.smssecure.database.DatabaseFactory;
 import org.smssecure.smssecure.database.EncryptingSmsDatabase;
 import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.database.model.SmsMessageRecord;
+import org.smssecure.smssecure.jobs.TextReceiveJob;
 import org.smssecure.smssecure.sms.MultipartSmsMessageHandler;
 import org.smssecure.smssecure.sms.OutgoingTextMessage;
 import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.whispersystems.libsignal.NoSessionException;
 import org.whispersystems.libsignal.UntrustedIdentityException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TextMessageEncryptingUtils {
 
-    public String decrypt(final Context context, final MasterSecret masterSecret, String encrypted)
-            throws NoSuchMessageException, UntrustedIdentityException, UndeliverableMessageException
+    public static void decrypt(final Context context, String encrypted, int subscriptionId, String sender)
     {
-        // TODO implement method, it should do the same stuff as when an SMS comes into system
-        return "";
+        String[] encryptedArr = new String[] { encrypted };
+        ApplicationContext.getInstance(context).getJobManager()
+                .add(new TextReceiveJob(context, encryptedArr, subscriptionId, sender));
     }
 
     public static List<String> encrypt(final Context context, final MasterSecret masterSecret, final long messageId)

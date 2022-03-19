@@ -81,6 +81,7 @@ import org.smssecure.smssecure.crypto.MasterCipher;
 import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.crypto.SecurityEvent;
 import org.smssecure.smssecure.crypto.SessionUtil;
+import org.smssecure.smssecure.crypto.TextMessageEncryptingUtils;
 import org.smssecure.smssecure.database.DatabaseFactory;
 import org.smssecure.smssecure.database.DraftDatabase;
 import org.smssecure.smssecure.database.DraftDatabase.Draft;
@@ -1560,8 +1561,15 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
 
             builder.setPositiveButton(android.R.string.ok, (dialog, which) ->
             {
-                // todo add decode here
-                dialog.dismiss();
+                Recipient primaryRecipient = recipients.getPrimaryRecipient();
+                if (primaryRecipient != null) {
+                    for (SubscriptionInfoCompat subscriptionInfo : activeSubscriptions) {
+                        final int subscriptionId = subscriptionInfo.getSubscriptionId();
+                        TextMessageEncryptingUtils.decrypt(SilenceConversationActivity.this, input.getText().toString(), subscriptionId, primaryRecipient.getNumber());
+                    }
+                    dialog.dismiss();
+                    pasteDialogIsShown = false;
+                }
             });
 
             builder.show();
