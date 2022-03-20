@@ -1564,7 +1564,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
                 Recipient primaryRecipient = recipients.getPrimaryRecipient();
                 if (primaryRecipient != null) {
                     for (SubscriptionInfoCompat subscriptionInfo : activeSubscriptions) {
-                        final int subscriptionId = subscriptionInfo.getSubscriptionId();
+                        final int subscriptionId = subscriptionInfo.getDeviceSubscriptionId();
                         TextMessageEncryptingUtils.decrypt(SilenceConversationActivity.this, input.getText().toString(), subscriptionId, primaryRecipient.getNumber());
                     }
                     dialog.dismiss();
