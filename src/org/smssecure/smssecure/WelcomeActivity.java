@@ -76,6 +76,7 @@ public class WelcomeActivity extends BaseActionBarActivity {
                .withPermanentDenialDialog(getString(R.string.WelcomeActivity_silence_requires_the_phone_and_sms_permissions_in_order_to_work_but_it_has_been_permanently_denied))
                .onSomeGranted((permissions) -> {
                  goToNextIntent();
+                 ((ApplicationContext)getApplication()).checkSimState();
                })
                .execute();
   }

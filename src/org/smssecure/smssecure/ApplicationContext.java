@@ -16,10 +16,9 @@
  */
 package org.smssecure.smssecure;
 
+import android.Manifest;
 import android.app.Application;
 import android.content.Context;
-
-import androidx.core.app.NotificationManagerCompat;
 
 import org.smssecure.smssecure.crypto.PRNGFixes;
 import org.smssecure.smssecure.dependencies.InjectableType;
@@ -28,6 +27,7 @@ import org.smssecure.smssecure.jobs.requirements.MasterSecretRequirementProvider
 import org.smssecure.smssecure.jobs.requirements.MediaNetworkRequirementProvider;
 import org.smssecure.smssecure.jobs.requirements.ServiceRequirementProvider;
 import org.smssecure.smssecure.notifications.NotificationChannels;
+import org.smssecure.smssecure.permissions.Permissions;
 import org.smssecure.smssecure.util.dualsim.SimChangedReceiver;
 import org.whispersystems.jobqueue.JobManager;
 import org.whispersystems.jobqueue.dependencies.DependencyInjector;
@@ -102,8 +102,10 @@ public class ApplicationContext extends Application implements DependencyInjecto
     mediaNetworkRequirementProvider.notifyMediaControlEvent();
   }
 
-  private void checkSimState() {
-    SimChangedReceiver.checkSimState(this);
+  public void checkSimState() {
+    if(Permissions.hasAll(this, Manifest.permission.READ_PHONE_STATE)){
+      SimChangedReceiver.checkSimState(this);
+    }
   }
 
 }
