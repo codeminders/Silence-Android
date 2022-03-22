@@ -852,4 +852,10 @@
     <string name="NotificationMmsMessageRecord_error_downloading_mms_message">Ошибка загрузки MMS-сообщения, нажмите, чтобы повторить попытку</string>
     <string name="NotificationMmsMessageRecord_downloading_mms_message">Загрузка MMS-сообщения</string>
     <string name="VideoPlayer_error_playing_video">Ошибка воспроизведения видео</string>
+
+    <string name="receive">получить</string>
+    <string name="send_sms">Отправить СМС</string>
+    <string name="sms_without">Без SMS</string>
+    <string name="sms_sent">SMS отправлено</string>
+
 </resources>

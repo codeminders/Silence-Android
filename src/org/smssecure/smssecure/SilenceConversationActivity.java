@@ -140,7 +140,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         implements ConversationFragment.ConversationFragmentListener,
         AttachmentManager.AttachmentListener,
         RecipientsModifiedListener,
-        ComposeText.MediaListener {
+        ComposeText.MediaListener, SingleSMSSendListener {
     private static final String TAG = SilenceConversationActivity.class.getSimpleName();
     private static final String PASTE_DIALOG_SHOW = "paste_dialog_show";
 
@@ -1448,6 +1448,47 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         return false;
     }
 
+    @Override
+    public void onSingleItemSendSMS(ConversationItem item) {
+        boolean    forcePlaintext = sendButton.getSelectedTransport().isPlaintext();
+        int        subscriptionId = sendButton.getSelectedTransport().getSimSubscriptionId().or(-1);
+
+        final Context context     = getApplicationContext();
+        final String  messageBody = item.getMessageRecord().getBody().getBody();
+
+        OutgoingTextMessage message;
+
+        if (isEncryptedConversation && !forcePlaintext) {
+            message = new OutgoingEncryptedMessage(recipients, messageBody, subscriptionId);
+        } else {
+            message = new OutgoingTextMessage(recipients, messageBody, subscriptionId);
+        }
+
+        Permissions.with(this)
+                .request(Manifest.permission.SEND_SMS)
+                .ifNecessary()
+                .withPermanentDenialDialog(getString(R.string.ConversationActivity_silence_needs_sms_permission_in_order_to_send_an_sms))
+                .onAllGranted(() -> {
+
+                    new AsyncTask<OutgoingTextMessage, Void, Long>() {
+                        @Override
+                        protected Long doInBackground(OutgoingTextMessage... messages) {
+                            return MessageSender.send(context, masterSecret, messages[0], threadId, true);
+                        }
+
+                        @Override
+                        protected void onPostExecute(Long result) {
+                            fragment.reload(recipients, result);
+
+                            initializeSecurity();
+                            updateRecipientPreferences();
+                        }
+                    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);
+
+                })
+                .execute();
+    }
+
     // Listeners
 
     private class AttachmentTypeListener implements DialogInterface.OnClickListener {
@@ -1613,4 +1654,8 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
             }
         }
     }
+}
+
+interface SingleSMSSendListener {
+    void onSingleItemSendSMS(ConversationItem item);
 }

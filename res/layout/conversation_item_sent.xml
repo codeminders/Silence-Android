@@ -1,156 +1,176 @@
 <?xml version="1.0" encoding="utf-8"?>
-<org.smssecure.smssecure.ConversationItem
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/conversation_item"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:focusable="true"
-        android:nextFocusLeft="@id/container"
-        android:nextFocusRight="@id/embedded_text_editor"
-        android:background="@drawable/conversation_item_background">
+<org.smssecure.smssecure.ConversationItem xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/conversation_item"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/conversation_item_background"
+    android:focusable="true"
+    android:nextFocusLeft="@id/container"
+    android:nextFocusRight="@id/embedded_text_editor"
+    android:orientation="horizontal">
 
-    <RelativeLayout android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:layout_marginLeft="6dp"
-                    android:layout_marginBottom="6dp"
-                    android:layout_marginRight="0dp">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="6dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginRight="0dp"
+        android:layout_marginBottom="6dp">
 
         <org.smssecure.smssecure.components.AlertView
-                android:id="@+id/indicators_parent"
-                android:layout_width="wrap_content"
+            android:id="@+id/indicators_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="6dp"
+            android:gravity="left|center_vertical"
+            android:orientation="vertical" />
+
+        <LinearLayout
+            android:id="@+id/body_bubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="5dp"
+            android:background="@drawable/sent_bubble"
+            android:orientation="vertical">
+
+            <ViewStub
+                android:id="@+id/image_view_stub"
+                android:layout_width="@dimen/media_bubble_height"
+                android:layout_height="@dimen/media_bubble_height"
+                android:layout="@layout/conversation_item_sent_thumbnail" />
+
+            <ViewStub
+                android:id="@+id/audio_view_stub"
+                android:layout_width="210dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="left|center_vertical"
-                android:layout_marginLeft="6dp"
-                android:layout_alignParentLeft="true"
-                android:layout_centerVertical="true"/>
-
-        <LinearLayout android:id="@+id/body_bubble"
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:layout_alignParentRight="true"
-                      android:layout_marginLeft="50dp"
-                      android:layout_marginRight="5dp"
-                      android:background="@drawable/sent_bubble"
-                      android:orientation="vertical">
-
-            <ViewStub
-                    android:id="@+id/image_view_stub"
-                    android:layout_width="@dimen/media_bubble_height"
-                    android:layout_height="@dimen/media_bubble_height"
-                    android:layout="@layout/conversation_item_sent_thumbnail"/>
-
-            <ViewStub
-                    android:id="@+id/audio_view_stub"
-                    android:layout="@layout/conversation_item_sent_audio"
-                    android:layout_width="210dp"
-                    android:layout_height="wrap_content"/>
+                android:layout="@layout/conversation_item_sent_audio" />
 
             <org.smssecure.smssecure.components.emoji.EmojiTextView
-                    android:id="@+id/conversation_item_body"
+                android:id="@+id/conversation_item_body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:linksClickable="true"
+                android:paddingLeft="4dp"
+                android:paddingRight="4dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="?conversation_item_sent_text_primary_color"
+                android:textColorLink="?conversation_item_sent_text_primary_color"
+                android:textSize="@dimen/conversation_item_body_text_size"
+                tools:text="Mango pickle lorem ipsum" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:orientation="horizontal"
+                android:paddingLeft="4dp"
+                android:paddingRight="4dp">
+
+                <TextView
+                    android:id="@+id/group_message_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingLeft="4dp"
-                    android:paddingRight="4dp"
-                    android:linksClickable="true"
+                    android:layout_gravity="right"
+                    android:layout_marginRight="8dip"
+                    android:linksClickable="false"
+                    android:paddingTop="1dip"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?conversation_item_sent_text_primary_color"
-                    android:textColorLink="?conversation_item_sent_text_primary_color"
-                    android:textSize="@dimen/conversation_item_body_text_size"
-                    tools:text="Mango pickle lorem ipsum" />
+                    android:textColor="?conversation_item_sent_text_secondary_color"
+                    android:visibility="gone" />
 
-            <LinearLayout android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:orientation="horizontal"
-                          android:paddingLeft="4dp"
-                          android:paddingRight="4dp"
-                          android:layout_gravity="right">
+                <TextView
+                    android:id="@+id/conversation_item_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:autoLink="none"
+                    android:fontFamily="sans-serif-light"
+                    android:linksClickable="false"
+                    android:minWidth="15sp"
+                    android:paddingTop="1dip"
+                    android:paddingBottom="2dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?conversation_item_sent_text_secondary_color"
+                    android:textSize="@dimen/conversation_item_date_text_size"
+                    tools:text="30 mins" />
 
-                <TextView android:id="@+id/group_message_status"
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:linksClickable="false"
-                          android:textAppearance="?android:attr/textAppearanceSmall"
-                          android:layout_gravity="right"
-                          android:textColor="?conversation_item_sent_text_secondary_color"
-                          android:visibility="gone"
-                          android:layout_marginRight="8dip"
-                          android:paddingTop="1dip" />
-
-                <TextView android:id="@+id/conversation_item_date"
-                          android:autoLink="none"
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:minWidth="15sp"
-                          android:linksClickable="false"
-                          android:textAppearance="?android:attr/textAppearanceSmall"
-                          android:layout_gravity="right"
-                          android:fontFamily="sans-serif-light"
-                          android:textColor="?conversation_item_sent_text_secondary_color"
-                          android:textSize="@dimen/conversation_item_date_text_size"
-                          android:paddingTop="1dip"
-                          android:paddingBottom="2dp"
-                          tools:text="30 mins" />
-
-                <TextView android:id="@+id/sim_info"
-                          android:autoLink="none"
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:minWidth="15sp"
-                          android:linksClickable="false"
-                          android:textAppearance="?android:attr/textAppearanceSmall"
-                          android:layout_gravity="right"
-                          android:fontFamily="sans-serif-light"
-                          android:textColor="?conversation_item_sent_text_secondary_color"
-                          android:textSize="@dimen/conversation_item_date_text_size"
-                          android:paddingTop="1dip"
-                          android:paddingBottom="2dp"
-                          android:paddingLeft="4dp"
-                          android:paddingStart="4dp"
-                          android:visibility="gone"
-                          tools:visibility="visible"
-                          tools:text="to SIM1"/>
+                <TextView
+                    android:id="@+id/sim_info"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:autoLink="none"
+                    android:fontFamily="sans-serif-light"
+                    android:linksClickable="false"
+                    android:minWidth="15sp"
+                    android:paddingStart="4dp"
+                    android:paddingLeft="4dp"
+                    android:paddingTop="1dip"
+                    android:paddingBottom="2dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?conversation_item_sent_text_secondary_color"
+                    android:textSize="@dimen/conversation_item_date_text_size"
+                    android:visibility="gone"
+                    tools:text="to SIM1"
+                    tools:visibility="visible" />
 
                 <org.smssecure.smssecure.components.DeliveryStatusView
-                        android:id="@+id/delivery_status"
-                        android:layout_width="20dp"
-                        android:layout_height="wrap_content"
-                        app:iconColor="?conversation_item_sent_text_secondary_color"/>
+                    android:id="@+id/delivery_status"
+                    android:layout_width="20dp"
+                    android:layout_height="wrap_content"
+                    app:iconColor="?conversation_item_sent_text_secondary_color" />
 
-                <ImageView android:id="@+id/secure_indicator"
-                           android:layout_width="wrap_content"
-                           android:layout_height="wrap_content"
-                           android:src="?menu_lock_icon_small"
-                           android:visibility="gone"
-                           android:layout_gravity="center_vertical|end"
-                           android:paddingLeft="2dp"
-                           android:paddingBottom="3dp"
-                           android:tint="?conversation_item_sent_text_secondary_color"
-                           android:tintMode="multiply"
-                           android:contentDescription="@string/conversation_item__secure_message_description" />
+                <ImageView
+                    android:id="@+id/secure_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|end"
+                    android:contentDescription="@string/conversation_item__secure_message_description"
+                    android:paddingLeft="2dp"
+                    android:paddingBottom="3dp"
+                    android:src="?menu_lock_icon_small"
+                    android:tint="?conversation_item_sent_text_secondary_color"
+                    android:tintMode="multiply"
+                    android:visibility="gone" />
 
             </LinearLayout>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/send_single_sms_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/send_sms_conversation_padding"
+                android:text="@string/send_sms" />
+
+            <TextView
+                android:id="@+id/sms_sending_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end" />
         </LinearLayout>
 
-        <TextView android:id="@+id/indicator_text"
+        <TextView
+            android:id="@+id/indicator_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/body_bubble"
             android:layout_alignParentRight="true"
-            android:paddingRight="5dip"
+            android:layout_marginLeft="50dp"
+            android:layout_marginTop="-3dp"
+            android:layout_marginRight="22dp"
+            android:background="?conversation_item_sent_indicator_text_background"
             android:paddingLeft="5dip"
             android:paddingTop="3dp"
+            android:paddingRight="5dip"
             android:paddingBottom="3dp"
-            android:layout_marginLeft="50dp"
-            android:layout_marginRight="22dp"
-            android:layout_marginTop="-3dp"
-            android:textSize="12sp"
             android:textColor="?conversation_item_sent_text_indicator_tab_color"
-            android:background="?conversation_item_sent_indicator_text_background"
+            android:textSize="12sp"
             android:visibility="gone" />
 
     </RelativeLayout>

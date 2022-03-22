@@ -586,6 +586,13 @@ public class ConversationFragment extends Fragment
         actionMode = ((AppCompatActivity)getActivity()).startSupportActionMode(actionModeCallback);
       }
     }
+
+    @Override
+    public void onSingleItemSendSMS(ConversationItem item) {
+      if (requireActivity() instanceof SingleSMSSendListener){
+        ((SingleSMSSendListener)requireActivity()).onSingleItemSendSMS(item);
+      }
+    }
   }
 
   private class ActionModeCallback implements ActionMode.Callback {

@@ -124,10 +124,7 @@ public class ComposeText extends EmojiEditText {
 
     setInputType(inputType);
     setImeOptions(imeOptions);
-    setHint(transport.getComposeHint(),
-            transport.getSimName().isPresent()
-                ? getContext().getString(R.string.conversation_activity__via_sim_name, transport.getSimName().get())
-                : null);
+    setHint(transport.getComposeHint(), null);
   }
 
   @Override

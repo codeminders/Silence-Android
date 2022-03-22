@@ -944,6 +944,9 @@
     <string name="Permissions_not_now">Not now</string>
 
     <string name="receive">receive</string>
+    <string name="send_sms">Send SMS</string>
+    <string name="sms_without">Without SMS</string>
+    <string name="sms_sent">SMS sent</string>
 
     <!-- EOF -->
 

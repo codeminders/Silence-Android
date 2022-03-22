@@ -27,6 +27,8 @@ import android.graphics.PorterDuff;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.AppCompatButton;
+
 import android.text.TextUtils;
 import android.text.util.Linkify;
 import android.util.AttributeSet;
@@ -108,6 +110,10 @@ public class ConversationItem extends LinearLayout
   private AvatarImageView    contactPhoto;
   private DeliveryStatusView deliveryStatusIndicator;
   private AlertView          alertView;
+  @Nullable
+  private AppCompatButton sendSingleMessageButton;
+  @Nullable
+  private TextView singleMessageStatus;
 
   private @NonNull  Set<MessageRecord>  batchSelected = new HashSet<>();
   private @Nullable Recipients          conversationRecipients;
@@ -118,6 +124,9 @@ public class ConversationItem extends LinearLayout
 
   private final PassthroughClickListener        passthroughClickListener    = new PassthroughClickListener();
   private final AttachmentDownloadClickListener downloadClickListener       = new AttachmentDownloadClickListener();
+
+  @Nullable
+  private SingleConversationItemSendSMSListener singleConversationItemSendSMSListener;
 
   private final Context context;
 
@@ -173,11 +182,21 @@ public class ConversationItem extends LinearLayout
     this.bodyBubble              =                      findViewById(R.id.body_bubble);
     this.mediaThumbnailStub      = new Stub<>((ViewStub) findViewById(R.id.image_view_stub));
     this.audioViewStub           = new Stub<>((ViewStub) findViewById(R.id.audio_view_stub));
+    this.sendSingleMessageButton = (AppCompatButton)     findViewById(R.id.send_single_sms_button);
+    this.singleMessageStatus     = (TextView)            findViewById(R.id.sms_sending_status);
 
     setOnClickListener(new ClickListener(null));
 
     bodyText.setOnLongClickListener(passthroughClickListener);
     bodyText.setOnClickListener(passthroughClickListener);
+    if (sendSingleMessageButton != null){
+      sendSingleMessageButton.setOnClickListener(new OnClickListener() {
+        @Override
+        public void onClick(View view) {
+          if (singleConversationItemSendSMSListener!=null) singleConversationItemSendSMSListener.onSingleItemSendSMS();
+        }
+      });
+    }
   }
 
   @Override
@@ -208,6 +227,19 @@ public class ConversationItem extends LinearLayout
     checkForAutoInitiate(messageRecord);
     setMinimumWidth();
     setSimInfo(messageRecord);
+    setSingleSmsMessageViews(messageRecord);
+  }
+
+  private void setSingleSmsMessageViews(final MessageRecord messageRecord){
+    if (sendSingleMessageButton!=null && singleMessageStatus!=null){
+      if (!messageRecord.isPending() || messageRecord.isDelivered()){
+        sendSingleMessageButton.setVisibility(GONE);
+        singleMessageStatus.setText(R.string.sms_sent);
+      }else {
+        sendSingleMessageButton.setVisibility(VISIBLE);
+        singleMessageStatus.setText(R.string.sms_without);
+      }
+    }
   }
 
   private void initializeAttributes() {
@@ -229,6 +261,10 @@ public class ConversationItem extends LinearLayout
 
   public MessageRecord getMessageRecord() {
     return messageRecord;
+  }
+
+  public void setSingleConversationItemSendSMSListener(SingleConversationItemSendSMSListener listener){
+    this.singleConversationItemSendSMSListener = listener;
   }
 
   /// MessageRecord Attribute Parsers
@@ -372,7 +408,7 @@ public class ConversationItem extends LinearLayout
       alertView.setNone();
 
       if      (!messageRecord.isOutgoing()) deliveryStatusIndicator.setNone();
-      else if (messageRecord.isPending())   deliveryStatusIndicator.setPending();
+      else if (messageRecord.isPending())   deliveryStatusIndicator.setNone();
       else if (messageRecord.isDelivered()) deliveryStatusIndicator.setDelivered();
       else                                  deliveryStatusIndicator.setSent();
     }
@@ -387,14 +423,14 @@ public class ConversationItem extends LinearLayout
       Optional<SubscriptionInfoCompat> subscriptionInfo = subscriptionManager.getActiveSubscriptionInfo(messageRecord.getSubscriptionId());
 
       if (subscriptionInfo.isPresent()) {
-        simInfoText.setText(getContext().getString(R.string.ConversationItem_via_s,  subscriptionInfo.get().getDisplayName()));
+        simInfoText.setText(getContext().getString(R.string.ConversationItem_via_s,  "SMS"));
         simInfoText.setVisibility(View.VISIBLE);
       } else {
         simInfoText.setVisibility(View.GONE);
       }
     }
   }
-  
+
   public void hideClickForDetails(){
     indicatorText.setVisibility(View.GONE);
   }
@@ -622,6 +658,10 @@ public class ConversationItem extends LinearLayout
         handleLegacyKeyExchangeClicked();
       }
     }
+  }
+
+  interface SingleConversationItemSendSMSListener {
+    void onSingleItemSendSMS();
   }
 
 }

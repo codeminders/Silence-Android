@@ -129,6 +129,7 @@ public class ConversationAdapter <V extends View & BindableConversationItem>
   public interface ItemClickListener {
     void onItemClick(ConversationItem item);
     void onItemLongClick(ConversationItem item);
+    void onSingleItemSendSMS(ConversationItem item);
   }
 
   @SuppressWarnings("ConstantConditions")
@@ -205,6 +206,11 @@ public class ConversationAdapter <V extends View & BindableConversationItem>
           if (clickListener != null) clickListener.onItemLongClick((ConversationItem)itemView);
           return true;
         }
+      });
+    }
+    if (viewType == MESSAGE_TYPE_OUTGOING){
+      ((ConversationItem)itemView).setSingleConversationItemSendSMSListener(() -> {
+        if (clickListener != null) clickListener.onSingleItemSendSMS((ConversationItem)itemView);
       });
     }
     Log.w(TAG, "Inflate time: " + (System.currentTimeMillis() - start));
