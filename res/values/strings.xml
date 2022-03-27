@@ -393,6 +393,8 @@
     <string name="KeyExchangeInitiator_initiate_despite_existing_request_question">Initiate despite existing request?</string>
     <string name="KeyExchangeInitiator_youve_already_sent_a_session_initiation_request_to_this_recipient_are_you_sure">You\'ve already sent a session initiation request to this recipient, are you sure you\'d like to send another?  This will invalidate the first request.</string>
     <string name="KeyExchangeInitiator_send">Send</string>
+    <string name="KeyExchangeInitiator_error">Key exchange error, please try again</string>
+    <string name="KeyExchangeInitiator_copy_and_send_messages">"Copy and send these and next messages"</string>
 
     <!-- MessageDisplayHelper -->
     <string name="MessageDisplayHelper_bad_encrypted_message">Bad encrypted message</string>

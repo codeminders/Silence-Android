@@ -378,6 +378,8 @@
     <string name="KeyExchangeInitiator_initiate_despite_existing_request_question">Инициировать, несмотря на существующий запрос?</string>
     <string name="KeyExchangeInitiator_youve_already_sent_a_session_initiation_request_to_this_recipient_are_you_sure">Вы уже отправили запрос на инициацию сеанса этому получателю, вы уверены, что хотите отправить еще один? Это приведет к аннулированию первого запроса.</string>
     <string name="KeyExchangeInitiator_send">Отправить</string>
+    <string name="KeyExchangeInitiator_error">Ошибка обмена ключами, пожалуйста попробуйте еще раз</string>
+    <string name="KeyExchangeInitiator_copy_and_send_messages">Скопируйте и отправте это и следующие сообщения</string>
     <!--MessageDisplayHelper-->
     <string name="MessageDisplayHelper_bad_encrypted_message">Зашифрованное сообщение испорчено</string>
     <string name="MessageDisplayHelper_decrypting_please_wait">Расшифровываем, пожалуйста, подождите…</string>

@@ -76,6 +76,7 @@ import org.smssecure.smssecure.components.SendTextButton;
 import org.smssecure.smssecure.contacts.ContactAccessor;
 import org.smssecure.smssecure.contacts.ContactAccessor.ContactData;
 import org.smssecure.smssecure.crypto.EncryptedMultipartMessage;
+import org.smssecure.smssecure.crypto.KeyExchangeInitResult;
 import org.smssecure.smssecure.crypto.KeyExchangeInitiator;
 import org.smssecure.smssecure.crypto.MasterCipher;
 import org.smssecure.smssecure.crypto.MasterSecret;
@@ -678,7 +679,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                KeyExchangeInitiator.initiate(SilenceConversationActivity.this, masterSecret, recipients, true, subscriptionId);
+                showInitiateKeyExchangeDialog(SilenceConversationActivity.this, masterSecret, recipients, true, subscriptionId);
                 long allocatedThreadId;
                 if (threadId == -1) {
                     allocatedThreadId = DatabaseFactory.getThreadDatabase(getApplicationContext()).getThreadIdFor(recipients);
@@ -712,16 +713,34 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
             public void onClick(DialogInterface dialog, int which) {
                 if (isSingleConversation()) {
                     Recipients recipients = getRecipients();
-                    KeyExchangeInitiator.abort(SilenceConversationActivity.this, masterSecret, recipients, subscriptionId);
+                    new AsyncTask<Recipients, Void, EncryptedMultipartMessage>() {
 
-                    long allocatedThreadId;
-                    if (threadId == -1) {
-                        allocatedThreadId = DatabaseFactory.getThreadDatabase(getApplicationContext()).getThreadIdFor(recipients);
-                    } else {
-                        allocatedThreadId = threadId;
-                    }
-                    Log.w(TAG, "Refreshing thread " + allocatedThreadId + "...");
-                    sendComplete(allocatedThreadId);
+                        @Override
+                        protected EncryptedMultipartMessage doInBackground(Recipients... recipients) {
+                            try {
+                                return KeyExchangeInitiator.abort(SilenceConversationActivity.this, masterSecret, recipients[0], subscriptionId);
+                            } catch (NoSuchMessageException | UntrustedIdentityException | UndeliverableMessageException e) {
+                                Log.e(TAG, e.getMessage(), e);
+                            }
+                            return null;
+                        }
+
+                        @Override
+                        protected void onPostExecute(EncryptedMultipartMessage message) {
+                            if (message != null) {
+                                showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText());
+                            }
+
+                            long allocatedThreadId;
+                            if (threadId == -1) {
+                                allocatedThreadId = DatabaseFactory.getThreadDatabase(getApplicationContext()).getThreadIdFor(recipients);
+                            } else {
+                                allocatedThreadId = threadId;
+                            }
+                            Log.w(TAG, "Refreshing thread " + allocatedThreadId + "...");
+                            sendComplete(allocatedThreadId);
+                        }
+                    }.execute(recipients);
                 }
             }
         });
@@ -1602,15 +1621,10 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
 
             builder.setPositiveButton(android.R.string.ok, (dialog, which) ->
             {
-                Recipient primaryRecipient = recipients.getPrimaryRecipient();
-                if (primaryRecipient != null) {
-                    for (SubscriptionInfoCompat subscriptionInfo : activeSubscriptions) {
-                        final int subscriptionId = subscriptionInfo.getDeviceSubscriptionId();
-                        TextMessageEncryptingUtils.decrypt(SilenceConversationActivity.this, input.getText().toString(), subscriptionId, primaryRecipient.getNumber());
-                    }
-                    dialog.dismiss();
-                    pasteDialogIsShown = false;
-                }
+                new TextReceiveTask().execute(input.getText().toString());
+                dialog.dismiss();
+                pasteDialogIsShown = false;
+
             });
 
             builder.show();
@@ -1632,6 +1646,95 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
             ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
             // Gets the clipboard as text.
             return item.getText().toString();
+        }
+    }
+
+    private void showKeyExchangeDialog(Context context, List<String> multipartKey) {
+        android.app.AlertDialog.Builder dialog = new android.app.AlertDialog.Builder(context);
+        dialog.setTitle(R.string.KeyExchangeInitiator_copy_and_send_messages);
+        dialog.setMessage(String.format("%s\n...", multipartKey.get(0)));
+        dialog.setIconAttribute(R.attr.dialog_alert_icon);
+        dialog.setCancelable(true);
+        dialog.setPositiveButton(android.R.string.copy, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                CopyEncryptedTextUtils.copyEncryptedTextToClipboard(context, multipartKey);
+            }
+        });
+        dialog.setNegativeButton(android.R.string.cancel, null);
+        dialog.show();
+    }
+
+    public void showInitiateKeyExchangeDialog(final Context context, final MasterSecret masterSecret, final Recipients recipients, boolean promptOnExisting, final int subscriptionId) {
+        Log.w(TAG, "Run key exchange for subscriptionId = " + subscriptionId);
+        if (promptOnExisting && KeyExchangeInitiator.hasInitiatedSession(context, masterSecret, recipients, subscriptionId)) {
+            android.app.AlertDialog.Builder dialog = new android.app.AlertDialog.Builder(context);
+            dialog.setTitle(R.string.KeyExchangeInitiator_initiate_despite_existing_request_question);
+            dialog.setMessage(R.string.KeyExchangeInitiator_youve_already_sent_a_session_initiation_request_to_this_recipient_are_you_sure);
+            dialog.setIconAttribute(R.attr.dialog_alert_icon);
+            dialog.setCancelable(true);
+            dialog.setPositiveButton(R.string.KeyExchangeInitiator_send, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                    initiateKeyExchange(subscriptionId);
+                }
+            });
+            dialog.setNegativeButton(android.R.string.cancel, null);
+            dialog.show();
+        } else {
+            initiateKeyExchange(subscriptionId);
+        }
+    }
+
+    private void initiateKeyExchange(int subscriptionId) {
+        new TextKeyExchangeAsyncTask().execute(subscriptionId);
+    }
+
+    public class TextKeyExchangeAsyncTask extends AsyncTask<Integer, Void, KeyExchangeInitResult> {
+        @Override
+        protected KeyExchangeInitResult doInBackground(Integer... subscriptionIds) {
+            int subscriptionId = subscriptionIds[0];
+            return KeyExchangeInitiator.initiateKeyExchange(SilenceConversationActivity.this, masterSecret, recipients, subscriptionId, false);
+        }
+
+
+        @Override
+        protected void onPostExecute(KeyExchangeInitResult keyExchangeInitResult) {
+            List<String> multipartKey = keyExchangeInitResult.getMessage();
+            if (multipartKey == null || multipartKey.isEmpty()) {
+                Integer errorResId = keyExchangeInitResult.getErrorResId();
+                int error = errorResId == null ? R.string.KeyExchangeInitiator_error : errorResId;
+                Toast.makeText(SilenceConversationActivity.this, error, Toast.LENGTH_LONG).show();
+            } else {
+                Log.w(TAG, "key parts total: " + multipartKey.size());
+                showKeyExchangeDialog(SilenceConversationActivity.this, multipartKey);
+            }
+        }
+    }
+
+    private class TextReceiveTask extends AsyncTask<String, Void, EncryptedMultipartMessage> {
+
+        @Override
+        protected EncryptedMultipartMessage doInBackground(String... inputs) {
+            String input = inputs[0];
+            Recipient primaryRecipient = recipients.getPrimaryRecipient();
+            EncryptedMultipartMessage message = null;
+            if (primaryRecipient != null) {
+                for (SubscriptionInfoCompat subscriptionInfo : activeSubscriptions) {
+                    final int subscriptionId = subscriptionInfo.getSubscriptionId();
+                    try {
+                        message = TextMessageEncryptingUtils.decrypt(SilenceConversationActivity.this, input, subscriptionId, primaryRecipient.getNumber());
+                    } catch (NoSuchMessageException | UntrustedIdentityException | UndeliverableMessageException e) {
+                        Log.e(TAG, e.getMessage(), e);
+                    }
+                }
+            }
+            return message;
+        }
+
+        @Override
+        protected void onPostExecute(EncryptedMultipartMessage message) {
+            if (message != null) {
+                showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText());
+            }
         }
     }
 

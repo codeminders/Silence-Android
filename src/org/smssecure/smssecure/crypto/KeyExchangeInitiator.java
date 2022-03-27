@@ -20,27 +20,25 @@ package org.smssecure.smssecure.crypto;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.os.Build;
-import android.telephony.SubscriptionInfo;
-import android.telephony.SubscriptionManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import org.smssecure.smssecure.R;
-import org.smssecure.smssecure.crypto.SessionBuilder;
 import org.smssecure.smssecure.crypto.storage.SilenceIdentityKeyStore;
 import org.smssecure.smssecure.crypto.storage.SilencePreKeyStore;
 import org.smssecure.smssecure.crypto.storage.SilenceSessionStore;
+import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.protocol.KeyExchangeMessage;
 import org.smssecure.smssecure.recipients.Recipient;
-import org.smssecure.smssecure.recipients.RecipientFactory;
 import org.smssecure.smssecure.recipients.Recipients;
 import org.smssecure.smssecure.sms.MessageSender;
 import org.smssecure.smssecure.sms.OutgoingEndSessionMessage;
 import org.smssecure.smssecure.sms.OutgoingKeyExchangeMessage;
 import org.smssecure.smssecure.sms.OutgoingTextMessage;
+import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.smssecure.smssecure.util.Base64;
-import org.smssecure.smssecure.util.ResUtil;
 import org.whispersystems.libsignal.SignalProtocolAddress;
+import org.whispersystems.libsignal.UntrustedIdentityException;
 import org.whispersystems.libsignal.state.IdentityKeyStore;
 import org.whispersystems.libsignal.state.PreKeyStore;
 import org.whispersystems.libsignal.state.SessionRecord;
@@ -51,9 +49,11 @@ import java.util.List;
 
 public class KeyExchangeInitiator {
 
-  public static void abort(final Context context, final MasterSecret masterSecret, final Recipients recipients, final int subscriptionId) {
+  private static final String TAG = KeyExchangeInitiator.class.getSimpleName();
+
+  public static EncryptedMultipartMessage abort(final Context context, final MasterSecret masterSecret, final Recipients recipients, final int subscriptionId) throws NoSuchMessageException, UntrustedIdentityException, UndeliverableMessageException {
     OutgoingEndSessionMessage endSessionMessage = new OutgoingEndSessionMessage(new OutgoingTextMessage(recipients, "TERMINATE", subscriptionId));
-    MessageSender.send(context, masterSecret, endSessionMessage, -1, false);
+    return MessageSender.encrypt(context, masterSecret, endSessionMessage, -1);
   }
 
   public static void initiate(final Context context, final MasterSecret masterSecret, final Recipients recipients, boolean promptOnExisting, final int subscriptionId) {
@@ -76,6 +76,13 @@ public class KeyExchangeInitiator {
   }
 
   public static void initiateKeyExchange(Context context, MasterSecret masterSecret, Recipients recipients, int subscriptionId) {
+    KeyExchangeInitResult keyExchangeInitResult = initiateKeyExchange(context, masterSecret, recipients, subscriptionId, true);
+    if (keyExchangeInitResult.getErrorResId() != null) {
+      Toast.makeText(context, keyExchangeInitResult.getErrorResId(), Toast.LENGTH_LONG).show();
+    }
+  }
+
+  public static KeyExchangeInitResult initiateKeyExchange(Context context, MasterSecret masterSecret, Recipients recipients, int subscriptionId, boolean sendSms) {
     Recipient         recipient         = recipients.getPrimaryRecipient();
     SessionStore      sessionStore      = new SilenceSessionStore(context, masterSecret, subscriptionId);
     PreKeyStore       preKeyStore       = new SilencePreKeyStore(context, masterSecret, subscriptionId);
@@ -85,19 +92,30 @@ public class KeyExchangeInitiator {
     SessionBuilder    sessionBuilder    = new SessionBuilder(sessionStore, preKeyStore, signedPreKeyStore,
                                                              identityKeyStore, new SignalProtocolAddress(recipient.getNumber(), 1));
 
+    List<String> multipartEncryptedText = null;
+    Integer errorResId = null;
     if (identityKeyStore.getIdentityKeyPair() != null) {
       KeyExchangeMessage         keyExchangeMessage = sessionBuilder.process();
       String                     serializedMessage  = Base64.encodeBytesWithoutPadding(keyExchangeMessage.serialize());
       OutgoingKeyExchangeMessage textMessage        = new OutgoingKeyExchangeMessage(recipients, serializedMessage, subscriptionId);
 
-      MessageSender.send(context, masterSecret, textMessage, -1, false);
+
+      if (sendSms) {
+        MessageSender.send(context, masterSecret, textMessage, -1, false);
+      } else {
+        try {
+          multipartEncryptedText = MessageSender.encrypt(context, masterSecret, textMessage, -1).getMultipartEncryptedText();
+        } catch (NoSuchMessageException | UntrustedIdentityException | UndeliverableMessageException e) {
+          Log.e(TAG, e.getMessage(), e);
+        }
+      }
     } else {
-      Toast.makeText(context, R.string.VerifyIdentityActivity_you_do_not_have_an_identity_key,
-              Toast.LENGTH_LONG).show();
+      errorResId = R.string.VerifyIdentityActivity_you_do_not_have_an_identity_key;
     }
+    return new KeyExchangeInitResult(multipartEncryptedText, errorResId);
   }
 
-  private static boolean hasInitiatedSession(Context context, MasterSecret masterSecret,
+  public static boolean hasInitiatedSession(Context context, MasterSecret masterSecret,
                                              Recipients recipients, int subscriptionId)
   {
     Recipient     recipient     = recipients.getPrimaryRecipient();

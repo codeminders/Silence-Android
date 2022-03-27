@@ -86,6 +86,7 @@ import org.smssecure.smssecure.database.DraftDatabase;
 import org.smssecure.smssecure.database.DraftDatabase.Draft;
 import org.smssecure.smssecure.database.DraftDatabase.Drafts;
 import org.smssecure.smssecure.database.MmsSmsColumns.Types;
+import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.database.RecipientPreferenceDatabase.RecipientsPreferences;
 import org.smssecure.smssecure.database.ThreadDatabase;
 import org.smssecure.smssecure.mms.AttachmentManager;
@@ -107,6 +108,7 @@ import org.smssecure.smssecure.service.KeyCachingService;
 import org.smssecure.smssecure.sms.MessageSender;
 import org.smssecure.smssecure.sms.OutgoingEncryptedMessage;
 import org.smssecure.smssecure.sms.OutgoingTextMessage;
+import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.smssecure.smssecure.util.CharacterCalculator.CharacterState;
 import org.smssecure.smssecure.util.Dialogs;
 import org.smssecure.smssecure.util.DynamicLanguage;
@@ -122,6 +124,7 @@ import org.smssecure.smssecure.util.concurrent.SettableFuture;
 import org.smssecure.smssecure.util.dualsim.SubscriptionInfoCompat;
 import org.smssecure.smssecure.util.dualsim.SubscriptionManagerCompat;
 import org.whispersystems.libsignal.InvalidMessageException;
+import org.whispersystems.libsignal.UntrustedIdentityException;
 import org.whispersystems.libsignal.util.guava.Optional;
 
 import java.util.List;
@@ -673,7 +676,11 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
       public void onClick(DialogInterface dialog, int which) {
         if (isSingleConversation()) {
           Recipients recipients = getRecipients();
-          KeyExchangeInitiator.abort(ConversationActivity.this, masterSecret, recipients, subscriptionId);
+          try {
+            KeyExchangeInitiator.abort(ConversationActivity.this, masterSecret, recipients, subscriptionId);
+          } catch (NoSuchMessageException | UntrustedIdentityException | UndeliverableMessageException e) {
+            Log.e(TAG, e.getMessage(), e);
+          }
 
           long allocatedThreadId;
           if (threadId == -1) {

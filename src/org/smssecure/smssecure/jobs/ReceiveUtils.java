@@ -1,10 +1,10 @@
 package org.smssecure.smssecure.jobs;
 
 import android.content.Context;
+import android.telephony.SmsMessage;
 import android.util.Log;
 import android.util.Pair;
 
-import org.smssecure.smssecure.ApplicationContext;
 import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.crypto.MasterSecretUtil;
 import org.smssecure.smssecure.database.DatabaseFactory;
@@ -16,47 +16,25 @@ import org.smssecure.smssecure.recipients.Recipients;
 import org.smssecure.smssecure.service.KeyCachingService;
 import org.smssecure.smssecure.sms.IncomingTextMessage;
 import org.smssecure.smssecure.sms.MultipartSmsMessageHandler;
-import org.smssecure.smssecure.util.dualsim.DualSimUtil;
-import org.whispersystems.jobqueue.JobParameters;
 import org.whispersystems.libsignal.util.guava.Optional;
 
+import java.util.LinkedList;
 import java.util.List;
 
-public abstract class ReceiveJob extends ContextJob {
+public abstract class ReceiveUtils {
 
-  private static final long serialVersionUID = 1L;
-
-  private static final String TAG = ReceiveJob.class.getSimpleName();
+  private static final String TAG = ReceiveUtils.class.getSimpleName();
 
   private static MultipartSmsMessageHandler multipartMessageHandler = new MultipartSmsMessageHandler();
 
-  protected final Object[] pdus;
-  protected final int      subscriptionId;
-
-  public ReceiveJob(Context context, Object[] pdus, int subscriptionId) {
-    super(context, JobParameters.newBuilder()
-                                .withPersistence()
-                                .withWakeLock(true)
-                                .create());
-
-    Log.w(TAG, "subscriptionId: " + subscriptionId);
-    Log.w(TAG, "Found app subscription ID: " + DualSimUtil.getSubscriptionIdFromDeviceSubscriptionId(context, subscriptionId));
-
-    this.pdus           = pdus;
-    this.subscriptionId = DualSimUtil.getSubscriptionIdFromDeviceSubscriptionId(context, subscriptionId);
-  }
-
-  @Override
-  public void onAdded() {}
-
-  @Override
-  public void onRun() {
-    Log.w(ReceiveJob.TAG, "Running for subscriptionId " + subscriptionId);
+  public static ReceivedMessage receiveMessage(Context context, Object[] pdus, int subscriptionId, boolean isSms, String sender) {
+    Log.w(ReceiveUtils.TAG, "Running for subscriptionId " + subscriptionId);
     MasterSecret masterSecret = KeyCachingService.getMasterSecret(context);
-    Optional<IncomingTextMessage> message = assembleMessageFragments(pdus, subscriptionId, masterSecret);
+    Optional<IncomingTextMessage> message = assembleMessageFragments(isSms, pdus, subscriptionId, masterSecret, sender);
 
-    if (message.isPresent() && !isBlocked(message.get())) {
-      Pair<Long, Long> messageAndThreadId = storeMessage(message.get());
+    ReceivedMessage receivedMessage = null;
+    if (message.isPresent() && !isBlocked(context, message.get())) {
+      Pair<Long, Long> messageAndThreadId = storeMessage(context, message.get());
 
       IncomingTextMessage incomingTextMessage = message.get();
       if (incomingTextMessage.isReceivedWhenLocked() ||
@@ -72,22 +50,15 @@ public abstract class ReceiveJob extends ContextJob {
         DatabaseFactory.getRecipientPreferenceDatabase(context)
                        .setDefaultSubscriptionId(recipients, incomingTextMessage.getSubscriptionId());
       }
+      receivedMessage = new ReceivedMessage(messageAndThreadId.second, messageAndThreadId.first, incomingTextMessage);
     } else if (message.isPresent()) {
       Log.w(TAG, "*** Received blocked SMS, ignoring...");
     }
+    return receivedMessage;
   }
 
-  @Override
-  public void onCanceled() {
 
-  }
-
-  @Override
-  public boolean onShouldRetry(Exception exception) {
-    return false;
-  }
-
-  private boolean isBlocked(IncomingTextMessage message) {
+  private static boolean isBlocked(Context context, IncomingTextMessage message) {
     if (message.getSender() != null) {
       Recipients recipients = RecipientFactory.getRecipientsFromString(context, message.getSender(), false);
       return recipients.isBlocked();
@@ -96,7 +67,7 @@ public abstract class ReceiveJob extends ContextJob {
     return false;
   }
 
-  private Pair<Long, Long> storeMessage(IncomingTextMessage message) {
+  private static Pair<Long, Long> storeMessage(Context context, IncomingTextMessage message) {
     EncryptingSmsDatabase database     = DatabaseFactory.getEncryptingSmsDatabase(context);
     MasterSecret          masterSecret = KeyCachingService.getMasterSecret(context);
 
@@ -110,18 +81,17 @@ public abstract class ReceiveJob extends ContextJob {
       messageAndThreadId = database.insertMessageInbox(masterSecret, message);
     }
 
-    if (masterSecret == null || message.isSecureMessage() || message.isKeyExchange() || message.isEndSession() || message.isXmppExchange()) {
-      ApplicationContext.getInstance(context)
-                        .getJobManager()
-                        .add(new SmsDecryptJob(context, messageAndThreadId.first, masterSecret == null));
-    }
-
     return messageAndThreadId;
   }
 
-  private Optional<IncomingTextMessage> assembleMessageFragments(Object[] pdus, int subscriptionId, MasterSecret masterSecret)
+  private static Optional<IncomingTextMessage> assembleMessageFragments(boolean isSms, Object[] pdus, int subscriptionId, MasterSecret masterSecret, String sender)
   {
-    List<IncomingTextMessage> messages = getIncomingTextMessages(pdus, subscriptionId, masterSecret);
+    List<IncomingTextMessage> messages;
+    if (isSms) {
+      messages = getIncomingSmsMessages(pdus, subscriptionId, masterSecret);
+    } else {
+      messages = getIncomingTextMessages(pdus,subscriptionId, masterSecret, sender);
+    }
 
     if (messages.isEmpty()) {
       return Optional.absent();
@@ -136,6 +106,50 @@ public abstract class ReceiveJob extends ContextJob {
     }
   }
 
-  protected abstract List<IncomingTextMessage> getIncomingTextMessages(Object[] pdus, int subscriptionId, MasterSecret masterSecret);
+  protected static List<IncomingTextMessage> getIncomingSmsMessages(Object[] pdus, int subscriptionId, MasterSecret masterSecret) {
+    List<IncomingTextMessage> messages = new LinkedList<>();
+
+    for (Object pdu : pdus) {
+      SmsMessage msg = SmsMessage.createFromPdu((byte[]) pdu);
+      if (msg != null){
+        messages.add(new IncomingTextMessage(msg, subscriptionId, masterSecret == null));
+      }
+    }
+    return messages;
+  }
+
+  private static List<IncomingTextMessage> getIncomingTextMessages(Object[] pdus, int subscriptionId, MasterSecret masterSecret, String sender) {
+    List<IncomingTextMessage> messages = new LinkedList<>();
+
+    for (Object pdu : pdus) {
+      IncomingTextMessage txtMsg = new IncomingTextMessage(sender, 1, System.currentTimeMillis(), (String) pdu, subscriptionId);
+      messages.add(txtMsg);
+    }
+    return messages;
+  }
+
+  public static class ReceivedMessage {
+    private final long threadId;
+    private final long messageId;
+    private final IncomingTextMessage message;
+
+    public ReceivedMessage(long threadId, long messageId, IncomingTextMessage message) {
+      this.threadId = threadId;
+      this.messageId = messageId;
+      this.message = message;
+    }
+
+    public long getThreadId() {
+      return threadId;
+    }
+
+    public long getMessageId() {
+      return messageId;
+    }
+
+    public IncomingTextMessage getMessage() {
+      return message;
+    }
+  }
 
 }
