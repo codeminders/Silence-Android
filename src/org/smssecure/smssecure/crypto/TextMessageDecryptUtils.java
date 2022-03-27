@@ -17,6 +17,7 @@ import org.smssecure.smssecure.sms.IncomingKeyExchangeMessage;
 import org.smssecure.smssecure.sms.IncomingPreKeyBundleMessage;
 import org.smssecure.smssecure.sms.IncomingTextMessage;
 import org.smssecure.smssecure.sms.IncomingXmppExchangeMessage;
+import org.smssecure.smssecure.sms.MessageSender;
 import org.smssecure.smssecure.sms.OutgoingKeyExchangeMessage;
 import org.smssecure.smssecure.sms.OutgoingTextMessage;
 import org.smssecure.smssecure.util.SilencePreferences;
@@ -34,7 +35,7 @@ public class TextMessageDecryptUtils {
     private static final String TAG = TextMessageDecryptUtils.class.getSimpleName();
 
     public static OutgoingTextMessage decryptMessage(Context context, MasterSecret masterSecret, long messageId,
-                                              boolean isReceivedWhenLocked, boolean manualOverride)
+                                                     boolean isReceivedWhenLocked, boolean manualOverride, boolean isSms)
             throws NoSuchMessageException {
         EncryptingSmsDatabase database = DatabaseFactory.getEncryptingSmsDatabase(context);
 
@@ -51,7 +52,7 @@ public class TextMessageDecryptUtils {
             else if (message.isPreKeyBundle())
                 handlePreKeySignalMessage(context, masterSecret, messageId, threadId, (IncomingPreKeyBundleMessage) message);
             else if (message.isKeyExchange())
-                response= handleKeyExchangeMessage(context, masterSecret, messageId, threadId, (IncomingKeyExchangeMessage) message, manualOverride);
+                response= handleKeyExchangeMessage(context, masterSecret, messageId, threadId, (IncomingKeyExchangeMessage) message, manualOverride, isSms);
             else if (message.isEndSession())
                 handleSecureMessage(context, masterSecret, messageId, threadId, message);
             else if (message.isXmppExchange())
@@ -115,7 +116,7 @@ public class TextMessageDecryptUtils {
     }
 
     private static OutgoingKeyExchangeMessage handleKeyExchangeMessage(Context context, MasterSecret masterSecret, long messageId, long threadId,
-                                                 IncomingKeyExchangeMessage message, boolean manualOverride) {
+                                                                       IncomingKeyExchangeMessage message, boolean manualOverride, boolean isSms) {
         EncryptingSmsDatabase database = DatabaseFactory.getEncryptingSmsDatabase(context);
 
         try {
@@ -125,6 +126,9 @@ public class TextMessageDecryptUtils {
             if (shouldSend(context, manualOverride)) {
                 database.markAsProcessedKeyExchange(messageId);
                 SecurityEvent.broadcastSecurityUpdateEvent(context, threadId);
+            }
+            if (isSms && response != null) {
+                MessageSender.send(context, masterSecret, response, threadId, true);
             }
             return response;
         } catch (InvalidVersionException e) {

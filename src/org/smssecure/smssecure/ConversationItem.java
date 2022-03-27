@@ -236,7 +236,11 @@ public class ConversationItem extends LinearLayout
         sendSingleMessageButton.setVisibility(GONE);
         singleMessageStatus.setText(R.string.sms_sent);
       }else {
-        sendSingleMessageButton.setVisibility(VISIBLE);
+        if (messageRecord.isEndSession()) {
+          sendSingleMessageButton.setVisibility(GONE);
+        } else {
+          sendSingleMessageButton.setVisibility(VISIBLE);
+        }
         singleMessageStatus.setText(R.string.sms_without);
       }
     }

@@ -91,6 +91,7 @@ import org.smssecure.smssecure.database.MmsSmsColumns.Types;
 import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.database.RecipientPreferenceDatabase.RecipientsPreferences;
 import org.smssecure.smssecure.database.ThreadDatabase;
+import org.smssecure.smssecure.database.model.MessageRecord;
 import org.smssecure.smssecure.mms.AttachmentManager;
 import org.smssecure.smssecure.mms.AttachmentManager.MediaType;
 import org.smssecure.smssecure.mms.AttachmentTypeSelectorAdapter;
@@ -718,7 +719,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
                         @Override
                         protected EncryptedMultipartMessage doInBackground(Recipients... recipients) {
                             try {
-                                return KeyExchangeInitiator.abort(SilenceConversationActivity.this, masterSecret, recipients[0], subscriptionId);
+                                return KeyExchangeInitiator.abort(SilenceConversationActivity.this, masterSecret, recipients[0], subscriptionId, false);
                             } catch (NoSuchMessageException | UntrustedIdentityException | UndeliverableMessageException e) {
                                 Log.e(TAG, e.getMessage(), e);
                             }
@@ -1473,39 +1474,46 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         int        subscriptionId = sendButton.getSelectedTransport().getSimSubscriptionId().or(-1);
 
         final Context context     = getApplicationContext();
-        final String  messageBody = item.getMessageRecord().getBody().getBody();
+        MessageRecord messageRecord = item.getMessageRecord();
+        final String  messageBody = messageRecord.getBody().getBody();
 
         OutgoingTextMessage message;
 
-        if (isEncryptedConversation && !forcePlaintext) {
-            message = new OutgoingEncryptedMessage(recipients, messageBody, subscriptionId);
+        if (messageRecord.isKeyExchange()) {
+            KeyExchangeInitiator.initiate(SilenceConversationActivity.this, masterSecret, recipients, true, subscriptionId);
+        } else if (messageRecord.isEndSession()) {
+            KeyExchangeInitiator.abort(SilenceConversationActivity.this, masterSecret, recipients, subscriptionId);
         } else {
-            message = new OutgoingTextMessage(recipients, messageBody, subscriptionId);
+            if (isEncryptedConversation && !forcePlaintext) {
+                message = new OutgoingEncryptedMessage(recipients, messageBody, subscriptionId);
+            } else {
+                message = new OutgoingTextMessage(recipients, messageBody, subscriptionId);
+            }
+
+            Permissions.with(this)
+                    .request(Manifest.permission.SEND_SMS)
+                    .ifNecessary()
+                    .withPermanentDenialDialog(getString(R.string.ConversationActivity_silence_needs_sms_permission_in_order_to_send_an_sms))
+                    .onAllGranted(() -> {
+
+                        new AsyncTask<OutgoingTextMessage, Void, Long>() {
+                            @Override
+                            protected Long doInBackground(OutgoingTextMessage... messages) {
+                                return MessageSender.send(context, masterSecret, messages[0], threadId, true);
+                            }
+
+                            @Override
+                            protected void onPostExecute(Long result) {
+                                fragment.reload(recipients, result);
+
+                                initializeSecurity();
+                                updateRecipientPreferences();
+                            }
+                        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);
+
+                    })
+                    .execute();
         }
-
-        Permissions.with(this)
-                .request(Manifest.permission.SEND_SMS)
-                .ifNecessary()
-                .withPermanentDenialDialog(getString(R.string.ConversationActivity_silence_needs_sms_permission_in_order_to_send_an_sms))
-                .onAllGranted(() -> {
-
-                    new AsyncTask<OutgoingTextMessage, Void, Long>() {
-                        @Override
-                        protected Long doInBackground(OutgoingTextMessage... messages) {
-                            return MessageSender.send(context, masterSecret, messages[0], threadId, true);
-                        }
-
-                        @Override
-                        protected void onPostExecute(Long result) {
-                            fragment.reload(recipients, result);
-
-                            initializeSecurity();
-                            updateRecipientPreferences();
-                        }
-                    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);
-
-                })
-                .execute();
     }
 
     // Listeners

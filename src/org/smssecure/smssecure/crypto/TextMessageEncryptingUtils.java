@@ -36,7 +36,7 @@ public class TextMessageEncryptingUtils {
         IncomingTextMessage message = receivedMessage.getMessage();
 
         if (masterSecret == null || message.isSecureMessage() || message.isKeyExchange() || message.isEndSession() || message.isXmppExchange()) {
-            OutgoingTextMessage outgoingTextMessage = TextMessageDecryptUtils.decryptMessage(context, masterSecret, receivedMessage.getMessageId(), false, false);
+            OutgoingTextMessage outgoingTextMessage = TextMessageDecryptUtils.decryptMessage(context, masterSecret, receivedMessage.getMessageId(), false, false, false);
             if (outgoingTextMessage != null) {
                 return MessageSender.encrypt(context, masterSecret, outgoingTextMessage, receivedMessage.getThreadId());
             }

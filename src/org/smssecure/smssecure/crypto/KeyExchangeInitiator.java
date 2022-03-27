@@ -51,9 +51,21 @@ public class KeyExchangeInitiator {
 
   private static final String TAG = KeyExchangeInitiator.class.getSimpleName();
 
-  public static EncryptedMultipartMessage abort(final Context context, final MasterSecret masterSecret, final Recipients recipients, final int subscriptionId) throws NoSuchMessageException, UntrustedIdentityException, UndeliverableMessageException {
+  public static void abort(final Context context, final MasterSecret masterSecret, final Recipients recipients, final int subscriptionId) {
+    try {
+      abort(context, masterSecret, recipients, subscriptionId, true);
+    } catch (NoSuchMessageException | UntrustedIdentityException | UndeliverableMessageException e) {
+      Log.e(TAG, e.getMessage(), e);
+    }
+  }
+  public static EncryptedMultipartMessage abort(final Context context, final MasterSecret masterSecret, final Recipients recipients, final int subscriptionId, final boolean sendSms) throws NoSuchMessageException, UntrustedIdentityException, UndeliverableMessageException {
     OutgoingEndSessionMessage endSessionMessage = new OutgoingEndSessionMessage(new OutgoingTextMessage(recipients, "TERMINATE", subscriptionId));
-    return MessageSender.encrypt(context, masterSecret, endSessionMessage, -1);
+    if (sendSms) {
+      MessageSender.send(context, masterSecret, endSessionMessage, -1, false);
+      return null;
+    } else {
+      return MessageSender.encrypt(context, masterSecret, endSessionMessage, -1);
+    }
   }
 
   public static void initiate(final Context context, final MasterSecret masterSecret, final Recipients recipients, boolean promptOnExisting, final int subscriptionId) {

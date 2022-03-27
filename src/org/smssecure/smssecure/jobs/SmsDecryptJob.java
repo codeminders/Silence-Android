@@ -44,7 +44,7 @@ public class SmsDecryptJob extends MasterSecretJob {
 
   @Override
   public void onRun(MasterSecret masterSecret) throws NoSuchMessageException {
-    TextMessageDecryptUtils.decryptMessage(context, masterSecret, messageId, isReceivedWhenLocked, manualOverride);
+    TextMessageDecryptUtils.decryptMessage(context, masterSecret, messageId, isReceivedWhenLocked, manualOverride, true);
   }
 
   @Override
