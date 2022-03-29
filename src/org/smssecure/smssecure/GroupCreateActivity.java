@@ -259,7 +259,7 @@ public class GroupCreateActivity extends PassphraseRequiredActionBarActivity {
     @Override
     protected void onPostExecute(Long resultThread) {
       if (resultThread > -1) {
-        Intent intent = new Intent(GroupCreateActivity.this, ConversationActivity.class);
+        Intent intent = new Intent(GroupCreateActivity.this, SilenceConversationActivity.class);
         intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, resultThread.longValue());
         intent.putExtra(ConversationActivity.DISTRIBUTION_TYPE_EXTRA, ThreadDatabase.DistributionTypes.DEFAULT);
 

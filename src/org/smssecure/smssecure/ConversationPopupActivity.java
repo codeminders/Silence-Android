@@ -19,7 +19,7 @@ import org.smssecure.smssecure.util.concurrent.ListenableFuture;
 
 import java.util.concurrent.ExecutionException;
 
-public class ConversationPopupActivity extends ConversationActivity {
+public class ConversationPopupActivity extends SilenceConversationActivity {
 
   private static final String TAG = ConversationPopupActivity.class.getSimpleName();
 
@@ -81,7 +81,7 @@ public class ConversationPopupActivity extends ConversationActivity {
           @Override
           public void onSuccess(Long result) {
             ActivityOptionsCompat transition = ActivityOptionsCompat.makeScaleUpAnimation(getWindow().getDecorView(), 0, 0, getWindow().getAttributes().width, getWindow().getAttributes().height);
-            Intent intent = new Intent(ConversationPopupActivity.this, ConversationActivity.class);
+            Intent intent = new Intent(ConversationPopupActivity.this, SilenceConversationActivity.class);
             intent.putExtra(ConversationActivity.RECIPIENTS_EXTRA, getRecipients().getIds());
             intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, result);
 

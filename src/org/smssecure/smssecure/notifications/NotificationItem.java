@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.TaskStackBuilder;
 
 import org.smssecure.smssecure.ConversationActivity;
+import org.smssecure.smssecure.SilenceConversationActivity;
 import org.smssecure.smssecure.mms.SlideDeck;
 import org.smssecure.smssecure.recipients.Recipient;
 import org.smssecure.smssecure.recipients.Recipients;
@@ -68,7 +69,7 @@ public class NotificationItem {
   }
 
   public PendingIntent getPendingIntent(Context context) {
-    Intent     intent           = new Intent(context, ConversationActivity.class);
+    Intent     intent           = new Intent(context, SilenceConversationActivity.class);
     Recipients notifyRecipients = threadRecipients != null ? threadRecipients : recipients;
     if (notifyRecipients != null) intent.putExtra("recipients", notifyRecipients.getIds());
 

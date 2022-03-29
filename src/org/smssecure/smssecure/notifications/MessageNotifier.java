@@ -39,6 +39,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.smssecure.smssecure.SilenceConversationActivity;
 import org.smssecure.smssecure.providers.BadgeWidgetProvider;
 import org.smssecure.smssecure.ConversationActivity;
 import org.smssecure.smssecure.ConversationListActivity;
@@ -117,7 +118,7 @@ public class MessageNotifier {
     if (visibleThread == threadId) {
       sendInThreadNotification(context, recipients);
     } else {
-      Intent intent = new Intent(context, ConversationActivity.class);
+      Intent intent = new Intent(context, SilenceConversationActivity.class);
       intent.putExtra(ConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
       intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, threadId);
       intent.setData((Uri.parse("custom://" + System.currentTimeMillis())));
