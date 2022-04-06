@@ -648,7 +648,10 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     }
 
     private void handleStartSecureSession() {
-        if (activeSubscriptions.size() < 2) {
+        if (activeSubscriptions.size() == 0) {
+            Toast.makeText(this, getString(R.string.TransportOptions_no_sim_card_found),
+                    Toast.LENGTH_LONG).show();
+        } else if (activeSubscriptions.size() < 2) {
             int subscriptionId = activeSubscriptions.get(0).getSubscriptionId();
             handleStartSecureSession(subscriptionId);
         }

@@ -350,7 +350,7 @@
   <string name="KeyExchangeInitiator_youve_already_sent_a_session_initiation_request_to_this_recipient_are_you_sure">Ви вже відправили цьому співрозмовнику запит на початок сеансу. Ви впевнені, що хочете відправити ще один? Попередній буде анульовано.</string>
   <string name="KeyExchangeInitiator_send">Відправити</string>
   <string name="KeyExchangeInitiator_error">Помилка обміну ключами, будь ласка, спробуйте ще раз</string>
-  <string name="KeyExchangeInitiator_copy_and_send_messages">Скопіюйте і відправте це і наступні повідомлення</string>
+  <string name="KeyExchangeInitiator_copy_and_send_messages">Скопіюйте і відправте це повідомлення</string>
   <!--MessageDisplayHelper-->
   <string name="MessageDisplayHelper_bad_encrypted_message">Погане шифроване повідомлення</string>
   <string name="MessageDisplayHelper_decrypting_please_wait">Розшифрування, будь ласка, зачекайте…</string>

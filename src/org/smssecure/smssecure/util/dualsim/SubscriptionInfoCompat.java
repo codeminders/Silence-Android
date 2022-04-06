@@ -41,7 +41,7 @@ public class SubscriptionInfoCompat {
     this.mcc                  = mcc;
     this.mnc                  = mnc;
     this.duplicateDisplayName = duplicateDisplayName;
-    this.subscriptionId       = findAppId(context, number, iccId);
+    this.subscriptionId       = findAppId(context, number, iccId, deviceSubscriptionId);
   }
 
   public @NonNull CharSequence getDisplayName() {
@@ -83,12 +83,12 @@ public class SubscriptionInfoCompat {
     return iccId;
   }
 
-  private static int findAppId(Context context, String number, String iccId) {
+  private static int findAppId(Context context, String number, String iccId, int deviceSubscriptionId) {
     int appSubscriptionId = -1;
 
     appSubscriptionId = findAppIdFromNumber(context, number);
     if (appSubscriptionId == -1) appSubscriptionId = findAppIdFromIccId(context, iccId);
-    if (appSubscriptionId == -1) appSubscriptionId = bumpAppSubcriptionId(context);
+    if (appSubscriptionId == -1) appSubscriptionId = deviceSubscriptionId;
 
     saveInfo(context, appSubscriptionId, number, iccId);
 

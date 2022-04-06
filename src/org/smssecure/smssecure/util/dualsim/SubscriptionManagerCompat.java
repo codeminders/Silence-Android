@@ -119,7 +119,7 @@ public class SubscriptionManagerCompat {
                                                 subscriptionInfo.getSubscriptionId(),
                                                 subscriptionInfo.getDisplayName(),
                                                 subscriptionInfo.getNumber(),
-                                                subscriptionInfo.getIccId(),
+                                                getIccOrCardId(subscriptionInfo),
                                                 subscriptionInfo.getSimSlotIndex()+1,
                                                 subscriptionInfo.getMcc(),
                                                 subscriptionInfo.getMnc(),
@@ -127,6 +127,14 @@ public class SubscriptionManagerCompat {
     }
 
     return compatList;
+  }
+
+  private String getIccOrCardId(SubscriptionInfo subscriptionInfo) {
+    if (Build.VERSION.SDK_INT >= 29) {
+      return Integer.toString(subscriptionInfo.getCardId());
+    } else {
+      return subscriptionInfo.getIccId();
+    }
   }
 
   public static Optional<Integer> getDefaultMessagingSubscriptionId() {
