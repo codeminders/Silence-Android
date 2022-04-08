@@ -40,6 +40,7 @@ import android.os.Bundle;
 import android.provider.Browser;
 import android.provider.ContactsContract;
 import android.text.Editable;
+import android.text.InputFilter;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -111,6 +112,7 @@ import org.smssecure.smssecure.service.KeyCachingService;
 import org.smssecure.smssecure.sms.MessageSender;
 import org.smssecure.smssecure.sms.OutgoingEncryptedMessage;
 import org.smssecure.smssecure.sms.OutgoingTextMessage;
+import org.smssecure.smssecure.sms.SmsTransportDetails;
 import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.smssecure.smssecure.util.CharacterCalculator.CharacterState;
 import org.smssecure.smssecure.util.Dialogs;
@@ -220,6 +222,9 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         initializeSecurity();
         updateRecipientPreferences();
         initializeDraft();
+        composeText.setFilters(new InputFilter[] {
+                new InputFilter.LengthFilter(SmsTransportDetails.ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE)
+        });
     }
 
     @Override
@@ -1225,7 +1230,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         }
     }
 
-    private void calculateCharactersRemaining() {
+    private int calculateCharactersRemaining() {
         String messageBody = composeText.getText().toString();
         TransportOption transportOption = sendButton.getSelectedTransport();
         CharacterState characterState = transportOption.calculateCharacters(messageBody);
@@ -1237,6 +1242,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         } else {
             charactersLeft.setVisibility(View.GONE);
         }
+        return characterState.charactersRemaining;
     }
 
     private boolean isSingleConversation() {
@@ -1590,7 +1596,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
 
         @Override
         public void afterTextChanged(Editable s) {
-            calculateCharactersRemaining();
+            int rem = calculateCharactersRemaining();
         }
 
         @Override

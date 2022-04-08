@@ -27,7 +27,7 @@ import java.io.IOException;
 
 public class SmsTransportDetails {
 
-  public static final int SMS_SIZE           = 160;
+  public static final int SMS_SIZE           = 139;
   public static final int MULTIPART_SMS_SIZE = 153;
 
   public static final int BASE_MAX_BYTES                = Base64.getEncodedBytesForTarget(SMS_SIZE - WirePrefix.PREFIX_SIZE);
@@ -35,11 +35,13 @@ public class SmsTransportDetails {
   public static final int MULTI_MESSAGE_MAX_BYTES       = BASE_MAX_BYTES - MultipartSmsTransportMessage.MULTI_MESSAGE_MULTIPART_OVERHEAD;
   public static final int FIRST_MULTI_MESSAGE_MAX_BYTES = BASE_MAX_BYTES - MultipartSmsTransportMessage.FIRST_MULTI_MESSAGE_MULTIPART_OVERHEAD;
 
-  public static final int ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE = SINGLE_MESSAGE_MAX_BYTES - CiphertextMessage.ENCRYPTED_MESSAGE_OVERHEAD;
+  public static final int ENCRYPTED_MESSAGE_OVERHEAD_ADJUSTED = CiphertextMessage.ENCRYPTED_MESSAGE_OVERHEAD;
+  public static final int ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE = SINGLE_MESSAGE_MAX_BYTES - ENCRYPTED_MESSAGE_OVERHEAD_ADJUSTED;
+  public static final String TAG = SmsTransportDetails.class.getSimpleName();
 
   public byte[] getEncodedMessage(byte[] messageWithMac) {
     String encodedMessage = Base64.encodeBytesWithoutPadding(messageWithMac);
-    Log.w("SmsTransportDetails", "Encoded Message Length: " + encodedMessage.length());
+    Log.w(TAG, "Encoded Message Length: " + encodedMessage.length());
     return encodedMessage.getBytes();
   }
 
@@ -78,7 +80,7 @@ public class SmsTransportDetails {
   }
 
   private int getMaxBodySizeForBytes(int bodyLength) {
-    int encryptedBodyLength   = bodyLength + CiphertextMessage.ENCRYPTED_MESSAGE_OVERHEAD;
+    int encryptedBodyLength   = bodyLength + ENCRYPTED_MESSAGE_OVERHEAD_ADJUSTED;
     int messageRecordsForBody = getMessageCountForBytes(encryptedBodyLength);
 
     if (messageRecordsForBody == 1) {
@@ -87,7 +89,7 @@ public class SmsTransportDetails {
       return
           FIRST_MULTI_MESSAGE_MAX_BYTES +
           (MULTI_MESSAGE_MAX_BYTES * (messageRecordsForBody-1)) -
-              CiphertextMessage.ENCRYPTED_MESSAGE_OVERHEAD;
+              ENCRYPTED_MESSAGE_OVERHEAD_ADJUSTED;
     }
   }
 

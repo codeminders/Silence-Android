@@ -33,11 +33,14 @@ import org.whispersystems.libsignal.protocol.SignalMessage;
 import org.whispersystems.libsignal.state.SignalProtocolStore;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.IllegalArgumentException;
 import java.lang.NullPointerException;
 
 public class SmsCipher {
 
+  private static final String TAG = SmsCipher.class.getSimpleName();
+  public static final String ISO_8859_5 = "ISO-8859-5";
   private final SmsTransportDetails transportDetails = new SmsTransportDetails();
 
   private final SignalProtocolStore signalProtocolStore;
@@ -61,7 +64,7 @@ public class SmsCipher {
         signalProtocolStore.deleteSession(new SignalProtocolAddress(message.getSender(), 1));
       }
 
-      return message.withMessageBody(new String(plaintext));
+      return message.withMessageBody(new String(plaintext, ISO_8859_5));
     } catch (IOException | IllegalArgumentException | NullPointerException e) {
       throw new InvalidMessageException(e);
     }
@@ -87,7 +90,12 @@ public class SmsCipher {
   public OutgoingTextMessage encrypt(OutgoingTextMessage message)
     throws NoSessionException, UntrustedIdentityException
   {
-    byte[] paddedBody      = transportDetails.getPaddedMessageBody(message.getMessageBody().getBytes());
+    byte[] paddedBody;
+    try {
+      paddedBody = transportDetails.getPaddedMessageBody(message.getMessageBody().getBytes(ISO_8859_5));
+    } catch (UnsupportedEncodingException e) {
+      paddedBody = transportDetails.getPaddedMessageBody(message.getMessageBody().getBytes());
+    }
     String recipientNumber = message.getRecipients().getPrimaryRecipient().getNumber();
 
     if (!signalProtocolStore.containsSession(new SignalProtocolAddress(recipientNumber, 1))) {

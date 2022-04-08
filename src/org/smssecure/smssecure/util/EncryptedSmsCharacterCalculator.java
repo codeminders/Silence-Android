@@ -16,9 +16,17 @@
  */
 package org.smssecure.smssecure.util;
 
+import android.util.Log;
+
 import org.smssecure.smssecure.sms.SmsTransportDetails;
 
+import java.io.UnsupportedEncodingException;
+
+import kotlin.text.Charsets;
+
 public class EncryptedSmsCharacterCalculator extends CharacterCalculator {
+
+  public static final String TAG = EncryptedSmsCharacterCalculator.class.getSimpleName();
 
   private CharacterState calculateSingleRecordCharacters(int charactersSpent) {
     int charactersRemaining = SmsTransportDetails.ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE - charactersSpent;
@@ -41,10 +49,17 @@ public class EncryptedSmsCharacterCalculator extends CharacterCalculator {
 
   @Override
   public CharacterState calculateCharacters(String messageBody) {
-    if (messageBody.length() <= SmsTransportDetails.ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE) {
-      return calculateSingleRecordCharacters(messageBody.length());
+    int messageBytesLength;
+    try {
+      messageBytesLength = messageBody.getBytes("ISO-8859-5").length;
+    } catch (UnsupportedEncodingException e) {
+      Log.e(TAG, e.getMessage(), e);
+      messageBytesLength = messageBody.getBytes(Charsets.UTF_8).length;
+    }
+    if (messageBytesLength <= SmsTransportDetails.ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE) {
+      return calculateSingleRecordCharacters(messageBytesLength);
     } else {
-      return calculateMultiRecordCharacters(messageBody.length());
+      return calculateMultiRecordCharacters(messageBytesLength);
     }
   }
 }
