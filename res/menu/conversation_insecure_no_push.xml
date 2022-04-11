@@ -12,6 +12,9 @@
                     android:id="@+id/menu_start_secure_session_dual_sim">
                   <menu></menu>
               </item>
+              <item android:title="@string/conversation_insecure__menu_scan_qr_code"
+                  android:id="@+id/menu_scan_qr_code" />
+
           </menu>
     </item>
 </menu>

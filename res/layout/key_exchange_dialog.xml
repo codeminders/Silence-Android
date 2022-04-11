@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/key_exchange_key_hint"
+        style="@style/Silence.Text.Body"
+        android:text="@string/key_part_of"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginLeft="16dp"
+        android:textStyle="bold"
+        android:gravity="start"/>
+    <TextView
+        android:id="@+id/key_exchange_key_preview"
+        style="@style/Silence.Text.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_margin="16dp"
+        android:gravity="start"/>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="right"
+        android:layout_margin="16dp">
+
+        <Button
+            android:id="@+id/key_exchange_qr_code_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/KeyExchangeInitiator_qr_code" />
+
+        <Button
+            android:id="@+id/key_exchange_copy_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@android:string/copy" />
+
+        <Button
+            android:id="@+id/key_exchange_cancel_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@android:string/cancel" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</androidx.appcompat.widget.LinearLayoutCompat>

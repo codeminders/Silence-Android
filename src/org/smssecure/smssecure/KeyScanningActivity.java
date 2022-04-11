@@ -17,7 +17,6 @@
 package org.smssecure.smssecure;
 
 import android.content.Intent;
-import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -26,7 +25,6 @@ import android.widget.Toast;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
-import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.util.Base64;
 import org.smssecure.smssecure.util.Dialogs;
 import org.smssecure.smssecure.util.DynamicLanguage;
@@ -104,24 +102,15 @@ public abstract class KeyScanningActivity extends PassphraseRequiredActionBarAct
     }
   }
 
-  private IntentIntegrator getIntentIntegrator() {
-    IntentIntegrator intentIntegrator = new IntentIntegrator(this);
-    intentIntegrator.setButtonYesByID(R.string.yes);
-    intentIntegrator.setButtonNoByID(R.string.no);
-    intentIntegrator.setTitleByID(R.string.KeyScanningActivity_install_barcode_Scanner);
-    intentIntegrator.setMessageByID(R.string.KeyScanningActivity_this_application_requires_barcode_scanner_would_you_like_to_install_it);
-    return intentIntegrator;
-  }
-
   protected void initiateScan() {
-    IntentIntegrator intentIntegrator = getIntentIntegrator();
+    IntentIntegrator intentIntegrator = QrCodeUtils.getIntentIntegrator(this);
     intentIntegrator.initiateScan();
   }
 
   protected void initiateDisplay() {
     IdentityKey identityKey = getIdentityKeyToDisplay();
     if (identityKey != null) {
-      IntentIntegrator intentIntegrator = getIntentIntegrator();
+      IntentIntegrator intentIntegrator = QrCodeUtils.getIntentIntegrator(this);
       intentIntegrator.shareText(Base64.encodeBytes(identityKey.serialize()));
     } else {
       Toast.makeText(this, R.string.VerifyIdentityActivity_you_do_not_have_an_identity_key,

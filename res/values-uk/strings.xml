@@ -791,5 +791,7 @@
   <string name="send_sms">Відправити СМС</string>
   <string name="sms_without">Без SMS</string>
   <string name="sms_sent">SMS надіслано</string>
+  <string name="key_part_of">Ключ частина %d з %d</string>
+  <string name="conversation_insecure__menu_scan_qr_code">Сканувати QR code</string>
 
 </resources>

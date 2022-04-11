@@ -395,6 +395,7 @@
     <string name="KeyExchangeInitiator_send">Send</string>
     <string name="KeyExchangeInitiator_error">Key exchange error, please try again</string>
     <string name="KeyExchangeInitiator_copy_and_send_messages">"Copy and send these and next messages"</string>
+    <string name="KeyExchangeInitiator_qr_code">QR code</string>
 
     <!-- MessageDisplayHelper -->
     <string name="MessageDisplayHelper_bad_encrypted_message">Bad encrypted message</string>
@@ -949,6 +950,8 @@
     <string name="send_sms">Send SMS</string>
     <string name="sms_without">Without SMS</string>
     <string name="sms_sent">SMS sent</string>
+    <string name="key_part_of">Key part %d of %d</string>
+    <string name="conversation_insecure__menu_scan_qr_code">Scan QR code</string>
 
     <!-- EOF -->
 

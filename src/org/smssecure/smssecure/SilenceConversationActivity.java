@@ -63,6 +63,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -132,6 +135,7 @@ import org.whispersystems.libsignal.InvalidMessageException;
 import org.whispersystems.libsignal.UntrustedIdentityException;
 import org.whispersystems.libsignal.util.guava.Optional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -147,6 +151,9 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         ComposeText.MediaListener, SingleSMSSendListener {
     private static final String TAG = SilenceConversationActivity.class.getSimpleName();
     private static final String PASTE_DIALOG_SHOW = "paste_dialog_show";
+    private static final String EXCHANGE_DIALOG_SHOW = "exchange_dialog_show";
+    private static final String KEY_PARTS = "key_parts";
+    private static final String CURRENT_KEY_PART = "current_key_part";
 
     public static final String RECIPIENTS_EXTRA = "recipients";
     public static final String THREAD_ID_EXTRA = "thread_id";
@@ -188,6 +195,9 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     private boolean isMmsEnabled = true;
 
     private boolean pasteDialogIsShown = false;
+    private boolean exchangeDialogIsShown = false;
+    private List<String> keyParts = null;
+    private int currentKeyPart = -1;
 
     private DynamicTheme dynamicTheme = new DynamicTheme();
     private DynamicLanguage dynamicLanguage = new DynamicLanguage();
@@ -205,6 +215,9 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         Log.w(TAG, "onCreate()");
         if (state != null) {
             pasteDialogIsShown = state.getBoolean(PASTE_DIALOG_SHOW, false);
+            exchangeDialogIsShown = state.getBoolean(EXCHANGE_DIALOG_SHOW, false);
+            currentKeyPart = state.getInt(CURRENT_KEY_PART);
+            keyParts = state.getStringArrayList(KEY_PARTS);
         }
         this.masterSecret = masterSecret;
         this.activeSubscriptions = SubscriptionManagerCompat.from(this).getActiveSubscriptionInfoList();
@@ -225,6 +238,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         composeText.setFilters(new InputFilter[] {
                 new InputFilter.LengthFilter(SmsTransportDetails.ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE)
         });
+        if (exchangeDialogIsShown) showKeyExchangeDialog(SilenceConversationActivity.this, keyParts, currentKeyPart);
     }
 
     @Override
@@ -256,6 +270,11 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean(PASTE_DIALOG_SHOW, pasteDialogIsShown);
+        savedInstanceState.putBoolean(EXCHANGE_DIALOG_SHOW, pasteDialogIsShown);
+        savedInstanceState.putInt(CURRENT_KEY_PART, currentKeyPart);
+        if (keyParts != null) {
+            savedInstanceState.putStringArrayList(KEY_PARTS, new ArrayList<>(keyParts));
+        }
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -308,33 +327,39 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     public void onActivityResult(int reqCode, int resultCode, Intent data) {
         Log.w(TAG, "onActivityResult called: " + reqCode + ", " + resultCode + " , " + data);
         super.onActivityResult(reqCode, resultCode, data);
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(reqCode, resultCode, data);
 
-        if (data == null && reqCode != TAKE_PHOTO || resultCode != RESULT_OK) return;
+        if ((scanResult != null) && (scanResult.getContents() != null)) {
+            String key = scanResult.getContents();
+            new TextReceiveTask().execute(key);
+        } else {
+            if (data == null && reqCode != TAKE_PHOTO || resultCode != RESULT_OK) return;
 
-        switch (reqCode) {
-            case PICK_IMAGE:
-                boolean isGif = MediaUtil.isGif(MediaUtil.getMimeType(this, data.getData()));
-                setMedia(data.getData(), isGif ? MediaType.GIF : MediaType.IMAGE);
-                break;
-            case PICK_VIDEO:
-                setMedia(data.getData(), MediaType.VIDEO);
-                break;
-            case PICK_AUDIO:
-                setMedia(data.getData(), MediaType.AUDIO);
-                break;
-            case PICK_CONTACT_INFO:
-                addAttachmentContactInfo(data.getData());
-                break;
-            case TAKE_PHOTO:
-                if (attachmentManager.getCaptureUri() != null) {
-                    setMedia(attachmentManager.getCaptureUri(), MediaType.IMAGE);
-                }
-                break;
-            case ADD_CONTACT:
-                recipients = RecipientFactory.getRecipientsForIds(SilenceConversationActivity.this, recipients.getIds(), true);
-                recipients.addListener(this);
-                fragment.reloadList();
-                break;
+            switch (reqCode) {
+                case PICK_IMAGE:
+                    boolean isGif = MediaUtil.isGif(MediaUtil.getMimeType(this, data.getData()));
+                    setMedia(data.getData(), isGif ? MediaType.GIF : MediaType.IMAGE);
+                    break;
+                case PICK_VIDEO:
+                    setMedia(data.getData(), MediaType.VIDEO);
+                    break;
+                case PICK_AUDIO:
+                    setMedia(data.getData(), MediaType.AUDIO);
+                    break;
+                case PICK_CONTACT_INFO:
+                    addAttachmentContactInfo(data.getData());
+                    break;
+                case TAKE_PHOTO:
+                    if (attachmentManager.getCaptureUri() != null) {
+                        setMedia(attachmentManager.getCaptureUri(), MediaType.IMAGE);
+                    }
+                    break;
+                case ADD_CONTACT:
+                    recipients = RecipientFactory.getRecipientsForIds(SilenceConversationActivity.this, recipients.getIds(), true);
+                    recipients.addListener(this);
+                    fragment.reloadList();
+                    break;
+            }
         }
     }
 
@@ -436,6 +461,9 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
             case R.id.menu_start_secure_session_dual_sim:
                 handleStartSecureSession();
                 return true;
+            case R.id.menu_scan_qr_code:
+                scanQrCode();
+                return true;
             case R.id.menu_abort_session:
                 handleAbortSecureSession();
                 return true;
@@ -475,6 +503,11 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         }
 
         return false;
+    }
+
+    private void scanQrCode() {
+        IntentIntegrator intentIntegrator = QrCodeUtils.getIntentIntegrator(this);
+        intentIntegrator.initiateScan();
     }
 
     @Override
@@ -737,7 +770,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
                         @Override
                         protected void onPostExecute(EncryptedMultipartMessage message) {
                             if (message != null) {
-                                showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText());
+                                showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText(), 0);
                             }
 
                             long allocatedThreadId;
@@ -1666,19 +1699,50 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         }
     }
 
-    private void showKeyExchangeDialog(Context context, List<String> multipartKey) {
-        android.app.AlertDialog.Builder dialog = new android.app.AlertDialog.Builder(context);
-        dialog.setTitle(R.string.KeyExchangeInitiator_copy_and_send_messages);
-        dialog.setMessage(String.format("%s\n...", multipartKey.get(0)));
-        dialog.setIconAttribute(R.attr.dialog_alert_icon);
-        dialog.setCancelable(true);
-        dialog.setPositiveButton(android.R.string.copy, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-                CopyEncryptedTextUtils.copyEncryptedTextToClipboard(context, multipartKey);
-            }
+    private void showKeyExchangeDialog(Context context, List<String> multipartKey, int currentKeyPart) {
+        setKeyExchangeState(currentKeyPart, multipartKey, true);
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(context);
+        dialogBuilder.setTitle(R.string.KeyExchangeInitiator_copy_and_send_messages);
+        dialogBuilder.setIconAttribute(R.attr.dialog_alert_icon);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.key_exchange_dialog, null);
+        final TextView keyParts = (TextView) dialogView.findViewById(R.id.key_exchange_key_hint);
+        keyParts.setText(String.format(getString(R.string.key_part_of), 1, 1));
+        final TextView keyPreview = (TextView) dialogView.findViewById(R.id.key_exchange_key_preview);
+        keyPreview.setText(String.format("%s\n...", multipartKey.get(0).substring(0, 64)));
+        final Button qrCodeButton = (Button) dialogView.findViewById(R.id.key_exchange_qr_code_button);
+        final Button copyButton = (Button) dialogView.findViewById(R.id.key_exchange_copy_button);
+        final Button cancelButton = (Button) dialogView.findViewById(R.id.key_exchange_cancel_button);
+
+        dialogBuilder.setView(dialogView);
+        dialogBuilder.setCancelable(true);
+        AlertDialog dialog = dialogBuilder.create();
+        StringBuilder sb = new StringBuilder();
+        for (String k: multipartKey) sb.append(k);
+        String key = sb.toString();
+        qrCodeButton.setOnClickListener(view -> {
+            showKeyQrCode(key);
         });
-        dialog.setNegativeButton(android.R.string.cancel, null);
+        copyButton.setOnClickListener(view -> {
+            CopyEncryptedTextUtils.copyEncryptedTextToClipboard(context, multipartKey);
+            setKeyExchangeState(-1, null, false);
+            dialog.dismiss();
+        });
+        cancelButton.setOnClickListener(view -> {
+            setKeyExchangeState(-1, null, false);
+            dialog.dismiss();
+        });
         dialog.show();
+    }
+
+    private void setKeyExchangeState(int currentKeyPart, List<String> keyParts, boolean exchangeDialogIsShown) {
+        this.currentKeyPart = currentKeyPart;
+        this.keyParts = keyParts;
+        this.exchangeDialogIsShown = exchangeDialogIsShown;
+    }
+
+    private void showKeyQrCode(String key) {
+        IntentIntegrator intentIntegrator = QrCodeUtils.getIntentIntegrator(this);
+        intentIntegrator.shareText(key);
     }
 
     public void showInitiateKeyExchangeDialog(final Context context, final MasterSecret masterSecret, final Recipients recipients, boolean promptOnExisting, final int subscriptionId) {
@@ -1712,7 +1776,6 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
             return KeyExchangeInitiator.initiateKeyExchange(SilenceConversationActivity.this, masterSecret, recipients, subscriptionId, false);
         }
 
-
         @Override
         protected void onPostExecute(KeyExchangeInitResult keyExchangeInitResult) {
             List<String> multipartKey = keyExchangeInitResult.getMessage();
@@ -1722,7 +1785,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
                 Toast.makeText(SilenceConversationActivity.this, error, Toast.LENGTH_LONG).show();
             } else {
                 Log.w(TAG, "key parts total: " + multipartKey.size());
-                showKeyExchangeDialog(SilenceConversationActivity.this, multipartKey);
+                showKeyExchangeDialog(SilenceConversationActivity.this, multipartKey, 0);
             }
         }
     }
@@ -1750,7 +1813,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         @Override
         protected void onPostExecute(EncryptedMultipartMessage message) {
             if (message != null) {
-                showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText());
+                showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText(), 0);
             }
         }
     }
