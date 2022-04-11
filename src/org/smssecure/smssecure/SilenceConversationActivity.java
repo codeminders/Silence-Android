@@ -152,6 +152,8 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     private static final String TAG = SilenceConversationActivity.class.getSimpleName();
     private static final String PASTE_DIALOG_SHOW = "paste_dialog_show";
     private static final String EXCHANGE_DIALOG_SHOW = "exchange_dialog_show";
+    private static final String SHOW_QR_SCANNER = "show_qr_scanner";
+    private static final String SHOW_QR_CODE = "show_qr_code";
     private static final String KEY_PARTS = "key_parts";
     private static final String CURRENT_KEY_PART = "current_key_part";
 
@@ -196,6 +198,8 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
 
     private boolean pasteDialogIsShown = false;
     private boolean exchangeDialogIsShown = false;
+    private boolean showQrCode =  false;
+    private boolean showQrScanner =  false;
     private List<String> keyParts = null;
     private int currentKeyPart = -1;
 
@@ -216,6 +220,8 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         if (state != null) {
             pasteDialogIsShown = state.getBoolean(PASTE_DIALOG_SHOW, false);
             exchangeDialogIsShown = state.getBoolean(EXCHANGE_DIALOG_SHOW, false);
+            showQrCode = state.getBoolean(SHOW_QR_CODE, false);
+            showQrScanner = state.getBoolean(SHOW_QR_SCANNER, false);
             currentKeyPart = state.getInt(CURRENT_KEY_PART);
             keyParts = state.getStringArrayList(KEY_PARTS);
         }
@@ -238,7 +244,6 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         composeText.setFilters(new InputFilter[] {
                 new InputFilter.LengthFilter(SmsTransportDetails.ENCRYPTED_SINGLE_MESSAGE_BODY_MAX_SIZE)
         });
-        if (exchangeDialogIsShown) showKeyExchangeDialog(SilenceConversationActivity.this, keyParts, currentKeyPart);
     }
 
     @Override
@@ -271,6 +276,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean(PASTE_DIALOG_SHOW, pasteDialogIsShown);
         savedInstanceState.putBoolean(EXCHANGE_DIALOG_SHOW, pasteDialogIsShown);
+        savedInstanceState.putBoolean(SHOW_QR_SCANNER, showQrCode);
         savedInstanceState.putInt(CURRENT_KEY_PART, currentKeyPart);
         if (keyParts != null) {
             savedInstanceState.putStringArrayList(KEY_PARTS, new ArrayList<>(keyParts));
@@ -296,6 +302,12 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         markThreadAsRead();
 
         Log.w(TAG, "onResume() Finished: " + (System.currentTimeMillis() - getIntent().getLongExtra(TIMING_EXTRA, 0)));
+
+        if (exchangeDialogIsShown && !showQrScanner) showKeyExchangeDialog(SilenceConversationActivity.this, keyParts, currentKeyPart);
+        if (showQrScanner) {
+            showQrScanner = false;
+            scanQrCode();
+        }
     }
 
     @Override
@@ -330,6 +342,11 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         IntentResult scanResult = IntentIntegrator.parseActivityResult(reqCode, resultCode, data);
 
         if ((scanResult != null) && (scanResult.getContents() != null)) {
+            showQrScanner = false;
+            showQrCode = true;
+            exchangeDialogIsShown = false;
+            keyParts = null;
+            currentKeyPart = -1;
             String key = scanResult.getContents();
             new TextReceiveTask().execute(key);
         } else {
@@ -1716,10 +1733,10 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         dialogBuilder.setView(dialogView);
         dialogBuilder.setCancelable(true);
         AlertDialog dialog = dialogBuilder.create();
-        StringBuilder sb = new StringBuilder();
-        for (String k: multipartKey) sb.append(k);
-        String key = sb.toString();
+        String key = joinMultipartMessage(multipartKey);
         qrCodeButton.setOnClickListener(view -> {
+            showQrScanner = true;
+            dialog.dismiss();
             showKeyQrCode(key);
         });
         copyButton.setOnClickListener(view -> {
@@ -1734,6 +1751,14 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         dialog.show();
     }
 
+    @NonNull
+    private String joinMultipartMessage(List<String> multipartKey) {
+        StringBuilder sb = new StringBuilder();
+        for (String k: multipartKey) sb.append(k);
+        String key = sb.toString();
+        return key;
+    }
+
     private void setKeyExchangeState(int currentKeyPart, List<String> keyParts, boolean exchangeDialogIsShown) {
         this.currentKeyPart = currentKeyPart;
         this.keyParts = keyParts;
@@ -1741,6 +1766,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     }
 
     private void showKeyQrCode(String key) {
+
         IntentIntegrator intentIntegrator = QrCodeUtils.getIntentIntegrator(this);
         intentIntegrator.shareText(key);
     }
@@ -1813,7 +1839,12 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         @Override
         protected void onPostExecute(EncryptedMultipartMessage message) {
             if (message != null) {
-                showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText(), 0);
+                if (showQrCode) {
+                    showQrCode = false;
+                    showKeyQrCode(joinMultipartMessage(message.getMultipartEncryptedText()));
+                } else {
+                    showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText(), 0);
+                }
             }
         }
     }

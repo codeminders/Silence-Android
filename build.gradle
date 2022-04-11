@@ -118,8 +118,8 @@ android {
     useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
-        versionCode 230
-        versionName "0.16.12-unstable-20220410-vk1"
+        versionCode 232
+        versionName "0.16.12-unstable-20220411-vk1"
         minSdk 23
 
         targetSdkVersion 32
