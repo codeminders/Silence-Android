@@ -861,5 +861,6 @@
     <string name="sms_sent">SMS отправлено</string>
     <string name="key_part_of">Ключ часть %d из %d</string>
     <string name="conversation_insecure__menu_scan_qr_code">Сканировать QR code</string>
+    <string name="next">Дальше</string>
 
 </resources>

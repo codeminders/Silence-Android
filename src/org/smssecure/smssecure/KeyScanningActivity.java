@@ -110,8 +110,10 @@ public abstract class KeyScanningActivity extends PassphraseRequiredActionBarAct
   protected void initiateDisplay() {
     IdentityKey identityKey = getIdentityKeyToDisplay();
     if (identityKey != null) {
-      IntentIntegrator intentIntegrator = QrCodeUtils.getIntentIntegrator(this);
-      intentIntegrator.shareText(Base64.encodeBytes(identityKey.serialize()));
+      Intent intent = new Intent(this, QrCodeActivity.class);
+      intent.putExtra(QrCodeActivity.KEY_EXCHANGE, Base64.encodeBytes(identityKey.serialize()));
+      intent.putExtra(QrCodeActivity.SHOW_NEXT, false);
+      startActivity(intent);
     } else {
       Toast.makeText(this, R.string.VerifyIdentityActivity_you_do_not_have_an_identity_key,
               Toast.LENGTH_LONG).show(); 

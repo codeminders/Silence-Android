@@ -952,6 +952,7 @@
     <string name="sms_sent">SMS sent</string>
     <string name="key_part_of">Key part %d of %d</string>
     <string name="conversation_insecure__menu_scan_qr_code">Scan QR code</string>
+    <string name="next">Next</string>
 
     <!-- EOF -->
 
