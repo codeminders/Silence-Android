@@ -64,7 +64,7 @@ public class SilenceIdentityKeyStore implements IdentityKeyStore {
                                      .isValidIdentity(masterSecret, recipientId, identityKey);
 
     if (!trusted) {
-      new SilenceSessionStore(context, masterSecret, subscriptionId).deleteAllSessions(address.getName());
+//      new SilenceSessionStore(context, masterSecret, subscriptionId).deleteAllSessions(address.getName());
     }
 
     return trusted;

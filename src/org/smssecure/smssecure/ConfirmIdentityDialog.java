@@ -9,28 +9,36 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import org.smssecure.smssecure.crypto.EncryptedMultipartMessage;
 import org.smssecure.smssecure.crypto.IdentityKeyParcelable;
 import org.smssecure.smssecure.crypto.MasterSecret;
+import org.smssecure.smssecure.crypto.TextMessageDecryptUtils;
 import org.smssecure.smssecure.crypto.storage.SilenceSessionStore;
 import org.smssecure.smssecure.database.DatabaseFactory;
 import org.smssecure.smssecure.database.IdentityDatabase;
+import org.smssecure.smssecure.database.NoSuchMessageException;
 import org.smssecure.smssecure.database.SmsDatabase;
 import org.smssecure.smssecure.database.documents.IdentityKeyMismatch;
 import org.smssecure.smssecure.database.model.MessageRecord;
-import org.smssecure.smssecure.jobs.SmsDecryptJob;
 import org.smssecure.smssecure.recipients.Recipient;
 import org.smssecure.smssecure.recipients.RecipientFactory;
+import org.smssecure.smssecure.sms.MessageSender;
+import org.smssecure.smssecure.sms.OutgoingTextMessage;
+import org.smssecure.smssecure.transport.UndeliverableMessageException;
 import org.smssecure.smssecure.util.InvalidNumberException;
 import org.smssecure.smssecure.util.Util;
+import org.whispersystems.libsignal.UntrustedIdentityException;
 
 public class ConfirmIdentityDialog extends AlertDialog {
 
   private static final String TAG = ConfirmIdentityDialog.class.getSimpleName();
 
   private OnClickListener callback;
+  private KeyExchangeListener keyExchangeListener;
 
   public ConfirmIdentityDialog(Context context,
                                MasterSecret masterSecret,
@@ -39,6 +47,7 @@ public class ConfirmIdentityDialog extends AlertDialog {
   {
     super(context);
     try {
+      if (context instanceof KeyExchangeListener) keyExchangeListener = (KeyExchangeListener) context;
       Recipient       recipient       = RecipientFactory.getRecipientForId(context, mismatch.getRecipientId(), false);
       String          name            = recipient.toShortString();
       String          number          = Util.canonicalizeNumber(context, recipient.getNumber());
@@ -87,34 +96,46 @@ public class ConfirmIdentityDialog extends AlertDialog {
 
     @Override
     public void onClick(DialogInterface dialog, int which) {
-      new AsyncTask<Void, Void, Void>()
+      new AsyncTask<Void, Void, EncryptedMultipartMessage>()
       {
         @Override
-        protected Void doInBackground(Void... params) {
+        protected EncryptedMultipartMessage doInBackground(Void... params) {
           IdentityDatabase identityDatabase = DatabaseFactory.getIdentityDatabase(getContext());
 
           identityDatabase.saveIdentity(masterSecret,
                                         mismatch.getRecipientId(),
                                         mismatch.getIdentityKey());
 
-          new SilenceSessionStore(getContext(), masterSecret, messageRecord.getSubscriptionId()).deleteAllSessions(number);
-
-          processMessageRecord(messageRecord);
-
-          return null;
+//                    new SilenceSessionStore(getContext(), masterSecret, messageRecord.getSubscriptionId()).deleteAllSessions(number);
+          return processMessageRecord(messageRecord);
         }
 
-        private void processMessageRecord(MessageRecord messageRecord) {
-          Context      context      = getContext();
-          SmsDatabase  smsDatabase  = DatabaseFactory.getEncryptingSmsDatabase(context);
+        @Override
+        protected void onPostExecute(EncryptedMultipartMessage key) {
+          if (keyExchangeListener != null && key != null) {
+            keyExchangeListener.onKeyReceived(key);
+          }
+        }
+
+        private EncryptedMultipartMessage processMessageRecord(MessageRecord messageRecord) {
+          Context context = getContext();
+          SmsDatabase smsDatabase = DatabaseFactory.getEncryptingSmsDatabase(context);
 
           smsDatabase.removeMismatchedIdentity(messageRecord.getId(),
-                                                 mismatch.getRecipientId(),
-                                                 mismatch.getIdentityKey());
+                  mismatch.getRecipientId(),
+                  mismatch.getIdentityKey());
 
-          ApplicationContext.getInstance(context)
-                            .getJobManager()
-                            .add(new SmsDecryptJob(context, messageRecord.getId(), true, false));
+          try {
+
+            OutgoingTextMessage outgoingTextMessage = TextMessageDecryptUtils.decryptMessage(context, masterSecret, messageRecord.getId(), false, true, false);
+            if (outgoingTextMessage != null) {
+              return MessageSender.encrypt(context, masterSecret, outgoingTextMessage, -1);
+            }
+          } catch (NoSuchMessageException | UntrustedIdentityException | UndeliverableMessageException e) {
+            Log.e(TAG, e.getMessage(), e);
+
+          }
+          return null;
         }
 
       }.execute();

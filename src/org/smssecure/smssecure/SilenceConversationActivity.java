@@ -148,7 +148,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         implements ConversationFragment.ConversationFragmentListener,
         AttachmentManager.AttachmentListener,
         RecipientsModifiedListener,
-        ComposeText.MediaListener, SingleSMSSendListener {
+        ComposeText.MediaListener, SingleSMSSendListener, KeyExchangeListener {
     private static final String TAG = SilenceConversationActivity.class.getSimpleName();
     private static final String PASTE_DIALOG_SHOW = "paste_dialog_show";
     private static final String EXCHANGE_DIALOG_SHOW = "exchange_dialog_show";
@@ -342,9 +342,10 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
             currentKeyPart = -1;
             scanQrCode();
         } else if (reqCode == QR_CODE_REQUEST_CODE && resultCode == RESULT_CANCELED) {
-            exchangeDialogIsShown = true;
+            showQrCode = false;
         } else if ((scanResult != null) && (scanResult.getContents() != null)) {
             showQrCode = true;
+            exchangeDialogIsShown = false;
             String key = scanResult.getContents();
             new TextReceiveTask().execute(key);
         } else {
@@ -1715,6 +1716,10 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
     }
 
     private void showKeyExchangeDialog(Context context, List<String> multipartKey, int currentKeyPart) {
+        showKeyExchangeDialog(context, multipartKey, currentKeyPart, true);
+    }
+
+    private void showKeyExchangeDialog(Context context, List<String> multipartKey, int currentKeyPart, boolean showNext) {
         setKeyExchangeState(currentKeyPart, multipartKey, true);
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(context);
         dialogBuilder.setTitle(R.string.KeyExchangeInitiator_copy_and_send_messages);
@@ -1734,7 +1739,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         String key = joinMultipartMessage(multipartKey);
         qrCodeButton.setOnClickListener(view -> {
             dialog.dismiss();
-            showKeyQrCode(key, true);
+            showKeyQrCode(key, showNext);
         });
         copyButton.setOnClickListener(view -> {
             CopyEncryptedTextUtils.copyEncryptedTextToClipboard(context, multipartKey);
@@ -1767,6 +1772,17 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
         intent.putExtra(QrCodeActivity.KEY_EXCHANGE, key);
         intent.putExtra(QrCodeActivity.SHOW_NEXT, showNext);
         startActivityForResult(intent, QR_CODE_REQUEST_CODE);
+    }
+
+    @Override
+    public void onKeyReceived(EncryptedMultipartMessage key) {
+        List<String> multipartEncryptedText = key.getMultipartEncryptedText();
+        if (showQrCode) {
+            showQrCode = false;
+            showKeyQrCode(joinMultipartMessage(multipartEncryptedText), false);
+        } else {
+            showKeyExchangeDialog(SilenceConversationActivity.this, multipartEncryptedText, 1, false);
+        }
     }
 
     public void showInitiateKeyExchangeDialog(final Context context, final MasterSecret masterSecret, final Recipients recipients, boolean promptOnExisting, final int subscriptionId) {
@@ -1842,7 +1858,7 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
                     String key = joinMultipartMessage(message.getMultipartEncryptedText());
                     showKeyQrCode(key, false);
                 } else {
-                    showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText(), 0);
+                    showKeyExchangeDialog(SilenceConversationActivity.this, message.getMultipartEncryptedText(), 0, false);
                 }
             }
         }
@@ -1871,4 +1887,8 @@ public class SilenceConversationActivity extends PassphraseRequiredActionBarActi
 
 interface SingleSMSSendListener {
     void onSingleItemSendSMS(ConversationItem item);
+}
+
+interface KeyExchangeListener {
+    void onKeyReceived(EncryptedMultipartMessage key);
 }
